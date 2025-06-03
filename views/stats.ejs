@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stats</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/css/stat.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Stats</h1>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Emails</h5>
+                        <p class="card-text"><%= totalEmails %></p>
+                    </div>
+                </div>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Active Emails</h5>
+                        <p class="card-text"><%= activeEmails %></p>
+                    </div>
+                </div>
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title"><a href="/status/inactive">Inactive Emails</a></h5>
+        <p class="card-text"><%= inactiveEmails %></p>
+    </div>
+</div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><a href="/status/sold">Sold Emails</a></h5>
+                        <p class="card-text"><%= soldEmails %></p>
+                    </div>
+                </div>
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title"><a href="/status/not sold">Not Sold Emails</a></h5>
+                        <p class="card-text"><%= notSoldEmails %></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h2>Emails by Year</h2>
+                <ul class="list-group">
+                    <% for (const year in years) { %>
+                        <li class="list-group-item"><a href="/stats/<%= year %>"><%= year %> (<%= years[year] %>)</a></li>
+                    <% } %>
+                </ul>
+                <canvas id="emailChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data for the chart, should be provided by the backend
+        const emailData = <%= JSON.stringify(emailStats) %>;
+
+        // Generate the chart
+        const ctx = document.getElementById('emailChart').getContext('2d');
+        const emailChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: emailData.dates, // Array of dates
+                datasets: [{
+                    label: 'Emails Created',
+                    data: emailData.counts, // Array of counts corresponding to dates
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

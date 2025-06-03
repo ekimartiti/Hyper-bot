@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Emails</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Add Emails</h1>
+        <form id="emailForm" action="/add-emails" method="POST">
+            <div class="form-group">
+                <label for="emails">Emails</label>
+                <textarea class="form-control" id="emails" name="emails" rows="5" placeholder="Enter emails, one per line" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select class="form-control" id="status" name="status">
+                    <option value="sold">Sold</option>
+                    <option value="not sold">Not Sold</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Emails</button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('emailForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const emails = document.getElementById('emails').value.split('\n').filter(email => email.trim() !== '');
+            const password = document.getElementById('password').value;
+            const status = document.getElementById('status').value;
+
+            const formData = new FormData();
+            emails.forEach(email => {
+                formData.append('emails[]', email.trim());
+            });
+            formData.append('password', password);
+            formData.append('status', status);
+
+            fetch('/add-emails', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (response.ok) {
+                    alert('Emails added successfully');
+                } else {
+                    alert('Error adding emails');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('Error adding emails');
+            });
+        });
+    </script>
+</body>
+</html>

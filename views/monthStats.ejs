@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Emails in <%= new Date(0, month-1).toLocaleString('default', { month: 'long' }) %> <%= year %></title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Emails in <%= new Date(0, month-1).toLocaleString('default', { month: 'long' }) %> <%= year %></h1>
+        <ul class="email-list">
+            <% if (emails.length > 0) { %>
+                <% emails.forEach(email => { %>
+                    <li class="email-item">
+                        <div><strong>Email:</strong> <%= email.email %></div>
+                        <div><strong>Password:</strong> <%= email.password %></div>
+                        <div><strong>Status:</strong> <%= email.activeStatus %>, <%= email.soldStatus %></div>
+                        <div><strong>Created At:</strong> <%= email.createdAt %></div>
+                        <div><strong>EK Status:</strong> <%= email.ekStatus %></div>
+                        <a href="/edit/<%= email.email %>">Edit</a>
+                        <form action="/delete/<%= email.email %>" method="post" style="display:inline;">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </li>
+                <% }) %>
+            <% } else { %>
+                <li class="email-item">
+                    <div>No emails found.</div>
+                </li>
+            <% } %>
+        </ul>
+    </div>
+</body>
+</html>

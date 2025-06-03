@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Year Stats</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Emails in <%= year %></h1>
+        <ul>
+            <% for (const month in months) { %>
+                <li><a href="/stats/<%= year %>/<%= month %>"><%= new Date(0, month-1).toLocaleString('default', { month: 'long' }) %> (<%= months[month] %>)</a></li>
+            <% } %>
+        </ul>
+    </div>
+</body>
+</html>

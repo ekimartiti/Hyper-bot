@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gmail Manager</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="/js/scripts.js" defer></script>
+</head>
+<body>
+    <header class="banner">
+        <div class="hamburger-menu">
+            <span>&#9776;</span>
+        </div>
+        <div class="logo">
+            <span>Gmail Manager</span>
+        </div>
+        <div class="nav-icons">
+            <a href="/add" class="add-email">+</a>
+            <a href="#" class="search-toggle">&#128269;</a>
+        </div>
+    </header>
+
+    <div class="search-bar" style="display:none;">
+        <form action="/search" method="get">
+            <input type="text" name="q" placeholder="Search emails..." value="<%= searchQuery || '' %>">
+            <button type="submit">Search</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <ul class="email-list">
+            <% if (emails.length > 0) { %>
+                <% emails.forEach(email => { %>
+                    <li class="email-item">
+                        <div><strong>Email:</strong> <%= email.email %></div>
+                        <div><strong>Password:</strong> <%= email.password %></div>
+                        <div><strong>Status:</strong> <%= email.activeStatus %></div>
+                        <div><strong>Created At:</strong> <%= new Date(email.createdAt).toLocaleDateString('en-GB') %></div>
+                        <div><strong>EK Status:</strong> <%= email.ekStatus %></div>
+                        <div><strong>YTB Trial:</strong> <%= email.ytbTrial %></div>
+
+                        <div class="action-row">
+                            <a href="/edit-status/<%= email.email %>"
+                               class="status-button
+                                   <%= email.soldStatus === 'sold' ? 'sold' : 
+                                       email.soldStatus === 'sold ytb' ? 'sold-ytb' :
+                                       email.soldStatus === 'pake ytb' ? 'pake-ytb' : 
+                                       'not-sold' %>">
+                               <%= email.soldStatus.toUpperCase() %>
+                            </a>
+                            <form action="/delete/<%= email.email %>" method="post">
+                                <button type="submit" class="delete-button">Delete</button>
+                            </form>
+                        </div>
+
+                        <a href="/edit/<%= email.email %>">Edit</a>
+                    </li>
+                <% }) %>
+            <% } else { %>
+                <li class="email-item">
+                    <div>No emails found for this month.</div>
+                </li>
+            <% } %>
+        </ul>
+    </div>
+
+    <div class="sidebar" style="display:none;">
+        <div class="hamburger-menu sidebar-hamburger">
+            <span>&#9776;</span>
+        </div>
+        <nav>
+            <a href="/">Home</a>
+            <a href="/stats">View Stats</a>
+        </nav>
+    </div>
+
+    <script>
+        document.querySelector('.hamburger-menu').addEventListener('click', () => {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.style.display = (sidebar.style.display === 'none' || sidebar.style.display === '') ? 'block' : 'none';
+        });
+
+        document.querySelector('.sidebar .hamburger-menu').addEventListener('click', () => {
+            document.querySelector('.sidebar').style.display = 'none';
+        });
+
+        document.querySelector('.search-toggle').addEventListener('click', () => {
+            const searchBar = document.querySelector('.search-bar');
+            searchBar.style.display = (searchBar.style.display === 'none' || searchBar.style.display === '') ? 'block' : 'none';
+        });
+
+        window.addEventListener('click', (e) => {
+            const sidebar = document.querySelector('.sidebar');
+            const hamburger = document.querySelector('.hamburger-menu span');
+            if (!sidebar.contains(e.target) && !hamburger.contains(e.target)) {
+                sidebar.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

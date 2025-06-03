@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Email</title>
+    <link rel="stylesheet" href="/css/addE.css">
+    <script src="/js/scripts.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Edit Email</h1>
+        <form action="/edit/<%= email.email %>" method="post">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="<%= email.email %>" readonly>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" value="<%= email.password %>" readonly>
+            <label for="createdAt">Created At:</label>
+            <input type="date" id="createdAt" name="createdAt" value="<%= email.createdAt %>" required>
+            <label for="activeStatus">Active Status:</label>
+            <select id="activeStatus" name="activeStatus">
+                <option value="active" <%= email.activeStatus === 'active' ? 'selected' : '' %>>Active</option>
+                <option value="inactive" <%= email.activeStatus === 'inactive' ? 'selected' : '' %>>Inactive</option>
+            </select>
+            <label for="soldStatus">Sold Status:</label>
+ <select id="soldStatus" name="soldStatus">
+    <option value="sold" <%= email.soldStatus === 'sold' ? 'selected' : '' %>>Sold</option>
+    <option value="not sold" <%= email.soldStatus === 'not sold' ? 'selected' : '' %>>Not Sold</option>
+    <option value="pake ytb" <%= email.soldStatus === 'pake ytb' ? 'selected' : '' %>>Pake Ytb</option>
+    <option value="sold ytb" <%= email.soldStatus === 'sold ytb' ? 'selected' : '' %>>Sold Ytb</option>
+</select>
+            <label for="ekStatus">EK Status:</label>
+            <select id="ekStatus" name="ekStatus">
+                <option value="ps" <%= email.ekStatus === 'ps' ? 'selected' : '' %>>PS</option>
+                <option value="cm" <%= email.ekStatus === 'cm' ? 'selected' : '' %>>CM</option>
+                <option value="c" <%= email.ekStatus === 'c' ? 'selected' : '' %>>C</option>
+                <option value="kw" <%= email.ekStatus === 'kw' ? 'selected' : '' %>>KW</option>
+                <option value="k" <%= email.ekStatus === 'k' ? 'selected' : '' %>>K</option>
+            </select>
+       <label for="ytbTrial">YouTube Trial:</label>
+<select id="ytbTrial" name="ytbTrial">
+    <option value="on" <%= email.ytbTrial === 'on' ? 'selected' : '' %>>ON</option>
+    <option value="off" <%= email.ytbTrial === 'off' ? 'selected' : '' %>>OFF</option>
+</select>     
+            <button type="submit">Update Email</button>
+        </form>
+    </div>
+</body>
+</html>

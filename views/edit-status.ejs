@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Sold Status</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    /* Reset dan base styling */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f8;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.08);
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .card h2 {
+      margin: 0 0 1rem;
+      font-size: 1.2rem;
+      color: #333;
+    }
+
+    .card h2 small {
+      display: block;
+      font-size: 0.85rem;
+      color: #777;
+      margin-top: 0.25rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+      color: #555;
+    }
+
+    select {
+      width: 100%;
+      padding: 0.7rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.9rem;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+      transition: background 0.2s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      text-decoration: none;
+      color: #555;
+      font-size: 0.9rem;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Media query untuk tampilan sangat kecil */
+    @media (max-width: 320px) {
+      .card {
+        padding: 1rem;
+      }
+
+      button {
+        font-size: 0.9rem;
+      }
+
+      select {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Edit Status
+      <small><%= email.email %></small>
+    </h2>
+
+    <form action="/edit-status/<%= email.email %>" method="POST">
+      <div class="form-group">
+        <label for="soldStatus">Sold Status:</label>
+        <select name="soldStatus" id="soldStatus">
+          <option value="not sold" <%= email.soldStatus === 'not sold' ? 'selected' : '' %>>Not Sold</option>
+          <option value="sold" <%= email.soldStatus === 'sold' ? 'selected' : '' %>>Sold</option>
+          <option value="sold ytb" <%= email.soldStatus === 'sold ytb' ? 'selected' : '' %>>Sold YTB</option>
+          <option value="pake ytb" <%= email.soldStatus === 'pake ytb' ? 'selected' : '' %>>Pake YTB</option>
+        </select>
+      </div>
+      <button type="submit">Update</button>
+      <a href="/" class="back-link">← Back to Home</a>
+    </form>
+  </div>
+</body>
+</html>

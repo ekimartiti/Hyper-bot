@@ -1,0 +1,276 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+header.banner {
+    background-color: #007bff;
+    padding: 5px 10px; /* Kurangi padding untuk memperkecil banner */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+header .hamburger-menu {
+    font-size: 24px;
+    cursor: pointer;
+    color: white;
+}
+
+header .logo {
+    font-size: 20px; /* Kurangi ukuran font logo */
+    font-weight: bold;
+    color: white;
+}
+
+header .nav-icons {
+margin-left: 80px;
+    display: flex;
+    align-items: flex-start; /* Pastikan elemen bisa bergeser ke bawah */
+}
+
+header .nav-icons .add-email {
+    margin-left: -110px;
+    text-decoration: none;
+    background-color: #28a745;
+    color: white;
+    width: 50px; /* Lebar elemen */
+    height: 50px; /* Tinggi elemen */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%; /* Membuat background berbentuk lingkaran sempurna */
+    font-size: 24px; /* Ukuran font untuk memperbesar logo "+" */
+}
+header .nav-icons .search-toggle {
+text-decoration: none;
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+font-size: 24px;
+}
+
+.search-bar {
+    background-color: #f8f9fa;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    top: 50px;
+    width: 100%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+    margin-top: 60px; /* Tambahkan margin-top lebih besar */
+}
+
+.search-bar form {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    justify-content: center;
+}
+
+.search-bar input {
+    width: 80%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.search-bar button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 5px;
+}
+
+.search-bar button:hover {
+    background-color: #0056b3;
+}
+
+.container {
+    margin-top: 30px; /* Tambahkan margin-top lebih banyak untuk mendorong ke bawah */
+    padding: 20px;
+    width: 90%;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    font-size: 18px; /* Perbesar font untuk tampilan yang lebih besar */
+}
+
+.email-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.email-item {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.email-item div {
+    margin: 5px 0;
+}
+
+.email-item a {
+    color: #007bff;
+    text-decoration: none;
+    margin-right: 10px;
+}
+
+.email-item a:hover {
+    text-decoration: underline;
+}
+
+.email-item form {
+    display: inline;
+}
+
+.email-item button {
+    padding: 5px 10px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.email-item button:hover {
+    background-color: #d32f2f;
+}
+
+.sidebar {
+    background-color: #f8f9fa;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 250px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    z-index: 1000;
+    display: none; /* Mulai dengan display none */
+}
+
+.sidebar .hamburger-menu {
+    background-color: #007bff; /* Warna biru untuk tab hamburger di sidebar */
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.sidebar nav {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar nav a {
+    color: #007bff;
+    text-decoration: none;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 5px;
+}
+
+.sidebar nav a:hover {
+    background-color: #e9ecef;
+}
+
+/* Tambahkan di dalam styles.css */
+.email-item .btn-sold {
+    padding: 5px 10px;
+    background-color: #28a745; /* Warna hijau */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.email-item .btn-sold:hover {
+    background-color: #218838; /* Warna hijau yang sedikit lebih gelap saat dihover */
+}
+
+.status-button {
+    padding: 6px 12px;
+    border-radius: 5px;
+    text-decoration: none;
+    color: white !important; /* Paksa putih agar tidak override */
+    font-weight: bold;
+    margin: 5px 5px 0 0;
+    display: inline-block;
+    border: none;
+    text-align: center;
+    min-width: 70px;
+}
+
+/* Tombol untuk SOLD */
+.status-button.sold {
+    background-color: #28a745; /* Hijau muda */
+}
+
+/* Tombol untuk SOLD YTB */
+.status-button.sold-ytb {
+    background-color: #1e5631; /* Hijau tua */
+}
+
+/* Tombol untuk PAKE YTB */
+.status-button.pake-ytb {
+    background-color: #007bff; /* Biru */
+}
+
+/* Tombol untuk NOT SOLD */.status-button.not-sold {
+    background-color: #FFA500; /* Orange */
+}
+
+select {
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 5px;
+}
+
+button[type="submit"] {
+    padding: 8px 16px;
+    background-color: #007bff;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.email-item .action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+    align-items: center;
+}
+
+.email-item .delete-button {
+    background-color: #dc3545;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.email-item .delete-button:hover {
+    background-color: #c82333;
+}

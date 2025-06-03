@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Emails</title>
+    <link rel="stylesheet" href="/css/addE.css">
+    <script src="/js/scripts.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Add Emails</h1>
+        <form id="emailForm" action="/add" method="post">
+            <label for="emails">Emails:</label>
+            <textarea id="emails" name="emails" rows="5" placeholder="Enter one email per line" required></textarea>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+            <label for="createdAt">Created At:</label>
+            <input type="date" id="createdAt" name="createdAt" required>
+            <label for="activeStatus">Active Status:</label>
+            <select id="activeStatus" name="activeStatus">
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+            <label for="soldStatus">Sold Status:</label>
+ <select id="soldStatus" name="soldStatus">
+    <option value="sold">Sold</option>
+    <option value="not sold">Not Sold</option>
+    <option value="pake ytb">Pake Ytb</option>
+    <option value="sold ytb">Sold Ytb</option>
+</select>
+            <label for="ekStatus">EK Status:</label>
+            <select id="ekStatus" name="ekStatus">
+                <option value="ps">PS</option>
+                <option value="cm">CM</option>
+                <option value="c">C</option>
+                <option value="kw">KW</option>
+                <option value="k">K</option>
+                <option value="hv">Hv</option> <!-- Opsi baru ditambahkan di sini -->
+            </select>
+      <label for="ytbTrial">YouTube Trial:</label>
+<select id="ytbTrial" name="ytbTrial">
+    <option value="on">ON</option>
+    <option value="off" selected>OFF</option>
+</select>      
+            <button type="submit">Add Emails</button>
+        </form>
+    </div>
+</body>
+</html>
