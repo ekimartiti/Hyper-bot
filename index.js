@@ -151,15 +151,19 @@ app.post('/add', isAuthenticated, async (req, res) => {
 
     const emailList = emails.split('\n').map(email => email.trim()).filter(email => email);
 
+    // ← FIX: parse tanggal string menjadi Date lokal (tanpa UTC offset)
+    const [year, month, day] = createdAt.split('-');
+    const createdDate = new Date(+year, +month - 1, +day); // bulan = 0-based
+
     for (const email of emailList) {
         const newEmail = new Email({
             email,
             password,
-            createdAt,
+            createdAt: createdDate, // ← gunakan hasil parsing
             activeStatus,
             soldStatus,
             ekStatus,
-            ytbTrial  // ← Tambahan field baru
+            ytbTrial
         });
         await newEmail.save();
     }
