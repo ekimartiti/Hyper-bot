@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Hasil Tambah Email</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .result-box {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.05);
+        }
+        .btn-group {
+            margin-top: 20px;
+        }
+        @media (max-width: 576px) {
+            h1 {
+                font-size: 1.5rem;
+                text-align: center;
+            }
+            .alert ul {
+                padding-left: 1.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4 result-box">
+        <h1 class="mb-4">Hasil Tambah Email</h1>
+
+        <% if (addedEmails.length > 0) { %>
+            <div class="alert alert-success">
+                <h5>Email berhasil ditambahkan:</h5>
+                <ul class="mb-0">
+                    <% addedEmails.forEach(email => { %>
+                        <li><%= email %></li>
+                    <% }); %>
+                </ul>
+            </div>
+        <% } %>
+
+        <% if (skippedEmails.length > 0) { %>
+            <div class="alert alert-warning">
+                <h5>Email dilewati karena sudah ada:</h5>
+                <ul class="mb-0">
+                    <% skippedEmails.forEach(email => { %>
+                        <li><%= email %></li>
+                    <% }); %>
+                </ul>
+            </div>
+        <% } %>
+
+        <div class="btn-group d-flex flex-column flex-sm-row justify-content-between">
+            <a href="/add" class="btn btn-primary mb-2 mb-sm-0">➕ Tambah Lagi</a>
+            <a href="/" class="btn btn-secondary">🏠 Kembali ke Home</a>
+        </div>
+    </div>
+</body>
+</html>

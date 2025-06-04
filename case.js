@@ -21,6 +21,36 @@ const moment = require('moment-timezone');
 const util = require('util')
 const chalk = require ('chalk')
 const Tesseract = require("tesseract.js");
+const os = require('os');
+const ffmpeg = require('fluent-ffmpeg');
+const getCmd = (id) => {
+  const base64Hash = Buffer.from(id).toString('base64'); // Konversi ke Base64
+  let position = null;
+  Object.keys(_scommand).forEach((i) => {
+    if(_scommand[i].id === base64Hash) {
+      position = i;
+    }
+  });
+  if(position !== null) {
+    return _scommand[position].chats;
+  }
+};
+const {
+      smsg,
+      fetchJson,
+      getBuffer,
+      fetchBuffer,
+      getGroupAdmins,
+      TelegraPh,
+      isUrl,
+      hitungmundur,
+      sleep,
+      clockString,
+      checkBandwidth,
+      runtime,
+      tanggal,
+      getRandom
+    } = require('./lib/myfunc')
 module.exports = Kaoru = async (Kaoru, m, msg, chatUpdate, store) => {
 	try {
 	  const {
@@ -415,6 +445,80 @@ switch(command) {
     }
 }
     break
+    case 'runtime':{
+    reply(`${runtime(os.uptime())}`)
+    }
+    break
+    case 's':
+      case 'sticker':
+      case 'stiker': {
+        if (!sebuahFoto) return reply(`Kirim/Balas Gambar Dengan Caption ${prefix + command}`);
+    if (!/image\/(jpe?g|png)/.test(mime)) return reply(`Media tidak support!`);
+        reply("⏳ Sedang memproses gambar, harap tunggu...");
+        if(/image|webp/.test(mime)) {
+          try {
+            let media = await quoted.download();
+            const mediaPath = './temp/media_image.jpg';
+            const outputPath = './temp/cropped_image.webp';
+            fs.writeFileSync(mediaPath, media);
+            if(!fs.existsSync(mediaPath)) {
+              return m.reply('File gambar gagal disimpan!');
+            }
+            ffmpeg(mediaPath).outputOptions(['-vf', 'crop=\'min(iw,ih)\':\'min(iw,ih)\',scale=512:512']).outputFormat('webp').output(outputPath).on('end', () => {
+              Kaoru.sendMessage(m.chat, {
+                sticker: fs.readFileSync(outputPath),
+                packname: "Kaoru Bot",
+                author: "Eki store"
+              }, {
+                quoted: m
+              })
+              fs.unlinkSync(mediaPath);
+              fs.unlinkSync(outputPath);
+            }).on('error', (err) => {
+              console.error('Error saat membuat stiker gambar:', err);
+              m.reply('Terjadi kesalahan saat membuat stiker gambar. 😞');
+              fs.unlinkSync(mediaPath);
+            }).run();
+          } catch (err) {
+            console.error('Error download gambar:', err);
+            m.reply('Gagal mendownload gambar! 😞');
+          }
+        } else if(/video/.test(mime)) {
+          if((quoted.msg || quoted).seconds > 11) {
+            return m.reply('Durasi video maksimal 9 detik untuk stiker!');
+          }
+          try {
+            let media = await quoted.download();
+            const mediaPath = './temp/media_video.mp4';
+            const outputPath = './temp/cropped_video.webp';
+            fs.writeFileSync(mediaPath, media);
+            if(!fs.existsSync(mediaPath)) {
+              return m.reply('File video gagal disimpan!');
+            }
+            ffmpeg(mediaPath).outputOptions(['-vf', 'crop=\'min(iw,ih)\':\'min(iw,ih)\',scale=512:512']).outputFormat('webp').output(outputPath).on('end', () => {
+              Kaoru.sendMessage(m.chat, {
+                sticker: fs.readFileSync(outputPath),
+                packname: global.packname,
+                author: global.author
+              }, {
+                quoted: m
+              })
+              fs.unlinkSync(mediaPath);
+              fs.unlinkSync(outputPath);
+            }).on('error', (err) => {
+              console.error('Error saat membuat stiker video:', err);
+              m.reply('Terjadi kesalahan saat membuat stiker video. 😞');
+              fs.unlinkSync(mediaPath);
+            }).run();
+          } catch (err) {
+            console.error('Error download video:', err);
+            m.reply('Gagal mendownload video! 😞');
+          }
+        } else {
+          m.reply(`Kirim atau balas gambar/video dengan caption ${prefix + command}`);
+        }
+      }
+      break
   default:
 }
     } catch (err) {

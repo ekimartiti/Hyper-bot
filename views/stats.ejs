@@ -1,88 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stats</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/css/stat.css">
-</head>
-<body>
-    <div class="container mt-5">
-        <h1 class="mb-4">Stats</h1>
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Total Emails</h5>
-                        <p class="card-text"><%= totalEmails %></p>
-                    </div>
-                </div>
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title">Active Emails</h5>
-                        <p class="card-text"><%= activeEmails %></p>
-                    </div>
-                </div>
-<div class="card mb-4">
-    <div class="card-body">
-        <h5 class="card-title"><a href="/status/inactive">Inactive Emails</a></h5>
-        <p class="card-text"><%= inactiveEmails %></p>
-    </div>
-</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Gmail Manager</title>
+    <link rel="stylesheet" href="/css/styles.css"/>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+    <script src="/js/scripts.js" defer></script>
+     <link rel="stylesheet" href="/css/stat.css"/> 
+  </head>
 
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title"><a href="/status/sold">Sold Emails</a></h5>
-                        <p class="card-text"><%= soldEmails %></p>
-                    </div>
-                </div>
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title"><a href="/status/not sold">Not Sold Emails</a></h5>
-                        <p class="card-text"><%= notSoldEmails %></p>
-                    </div>
-                </div>
+  <body>
+    <header class="banner">
+      <div class="hamburger-menu"><span>&#9776;</span></div>
+      <div class="logo"><span>Gmail Manager</span></div>
+      <div class="nav-icons">
+        <a href="/add" class="add-email">+</a>
+        <a href="#" class="search-toggle">&#128269;</a>
+      </div>
+    </header>
+
+    <div class="search-bar" style="display:none;">
+      <form action="/search" method="get">
+        <input type="text" name="q" placeholder="Search emails..." value="<%= searchQuery || '' %>">
+        <button type="submit">Search</button>
+      </form>
+    </div>
+
+    <div class="sidebar" style="display:none;">
+      <div class="hamburger-menu sidebar-hamburger"><span>&#9776;</span></div>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/stats">View Stats</a>
+      </nav>
+    </div>
+
+    <div class="container mt-5">
+      <h1 class="mb-4">Stats</h1>
+      <div class="row">
+        <!-- Kolom Statistik -->
+        <div class="col-md-6">
+          <div class="stat-card">
+            <div>
+              <h6 class="stat-title">Total Emails</h6>
+              <h4 class="stat-value"><%= totalEmails %></h4>
             </div>
-            <div class="col-md-6">
-                <h2>Emails by Year</h2>
-                <ul class="list-group">
-                    <% for (const year in years) { %>
-                        <li class="list-group-item"><a href="/stats/<%= year %>"><%= year %> (<%= years[year] %>)</a></li>
-                    <% } %>
-                </ul>
-                <canvas id="emailChart" width="400" height="400"></canvas>
+            <div class="stat-icon bg-gradient-blue"><i class="fas fa-envelope"></i></div>
+          </div>
+
+          <div class="stat-card">
+            <div>
+              <h6 class="stat-title">Active Emails</h6>
+              <h4 class="stat-value"><%= activeEmails %> <span class="text-success">+3%</span></h4>
             </div>
+            <div class="stat-icon bg-gradient-green"><i class="fas fa-check-circle"></i></div>
+          </div>
+
+          <div class="stat-card">
+            <div>
+              <h6 class="stat-title"><a href="/status/inactive">Inactive Emails</a></h6>
+              <h4 class="stat-value"><%= inactiveEmails %> <span class="text-danger">-2%</span></h4>
+            </div>
+            <div class="stat-icon bg-gradient-red"><i class="fas fa-times-circle"></i></div>
+          </div>
+
+          <div class="stat-card">
+            <div>
+              <h6 class="stat-title"><a href="/status/sold">Sold Emails</a></h6>
+              <h4 class="stat-value"><%= soldEmails %></h4>
+            </div>
+            <div class="stat-icon bg-gradient-orange"><i class="fas fa-dollar-sign"></i></div>
+          </div>
+
+          <div class="stat-card">
+            <div>
+              <h6 class="stat-title"><a href="/status/not sold">Not Sold Emails</a></h6>
+              <h4 class="stat-value"><%= notSoldEmails %></h4>
+            </div>
+            <div class="stat-icon bg-gradient-blue"><i class="fas fa-ban"></i></div>
+          </div>
+
+          <div class="stat-card">
+            <div>
+              <h6 class="stat-title"><a href="/status/ytbtrial-on">YouTube Trial (ON)</a></h6>
+              <h4 class="stat-value"><%= ytbOnNotSold %></h4>
+            </div>
+            <div class="stat-icon bg-gradient-purple"><i class="fab fa-youtube"></i></div>
+          </div>
+
+          <div class="stat-card">
+            <div>
+              <h6 class="stat-title">Pake YTB</h6>
+              <h4 class="stat-value"><%= pakeYtb %></h4>
+            </div>
+            <div class="stat-icon bg-gradient-red"><i class="fas fa-play-circle"></i></div>
+          </div>
+
+          <div class="stat-card">
+            <div>
+              <h6 class="stat-title">Sold YTB</h6>
+              <h4 class="stat-value"><%= sdYtb %></h4>
+            </div>
+            <div class="stat-icon bg-gradient-green"><i class="fas fa-check"></i></div>
+          </div>
         </div>
+
+        <!-- Kolom Grafik & Tahun -->
+        <div class="col-md-6">
+          <h2>Emails by Year</h2>
+          <ul class="list-group mb-4">
+            <% for (const year in years) { %>
+              <li class="list-group-item">
+                <a href="/stats/<%= year %>"><%= year %> (<%= years[year] %>)</a>
+              </li>
+            <% } %>
+          </ul>
+          <canvas id="emailChart" width="400" height="400"></canvas>
+        </div>
+      </div>
     </div>
 
     <script>
-        // Data for the chart, should be provided by the backend
-        const emailData = <%= JSON.stringify(emailStats) %>;
+      const emailData = <%= JSON.stringify(emailStats) %>;
 
-        // Generate the chart
-        const ctx = document.getElementById('emailChart').getContext('2d');
-        const emailChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: emailData.dates, // Array of dates
-                datasets: [{
-                    label: 'Emails Created',
-                    data: emailData.counts, // Array of counts corresponding to dates
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
+      const ctx = document.getElementById('emailChart').getContext('2d');
+      const emailChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: emailData.dates,
+          datasets: [{
+            label: 'Emails Created',
+            data: emailData.counts,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true
             }
-        });
+          }
+        }
+      });
     </script>
-</body>
+  </body>
 </html>

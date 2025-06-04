@@ -74,29 +74,5 @@
             <a href="/stats">View Stats</a>
         </nav>
     </div>
-
-    <script>
-        document.querySelector('.hamburger-menu').addEventListener('click', () => {
-            const sidebar = document.querySelector('.sidebar');
-            sidebar.style.display = (sidebar.style.display === 'none' || sidebar.style.display === '') ? 'block' : 'none';
-        });
-
-        document.querySelector('.sidebar .hamburger-menu').addEventListener('click', () => {
-            document.querySelector('.sidebar').style.display = 'none';
-        });
-
-        document.querySelector('.search-toggle').addEventListener('click', () => {
-            const searchBar = document.querySelector('.search-bar');
-            searchBar.style.display = (searchBar.style.display === 'none' || searchBar.style.display === '') ? 'block' : 'none';
-        });
-
-        window.addEventListener('click', (e) => {
-            const sidebar = document.querySelector('.sidebar');
-            const hamburger = document.querySelector('.hamburger-menu span');
-            if (!sidebar.contains(e.target) && !hamburger.contains(e.target)) {
-                sidebar.style.display = 'none';
-            }
-        });
-    </script>
 </body>
 </html>

@@ -148,27 +148,34 @@ app.get('/add', isAuthenticated, (req, res) => {
 
 app.post('/add', isAuthenticated, async (req, res) => {
     const { emails, password, createdAt, activeStatus, soldStatus, ekStatus, ytbTrial } = req.body;
+    const emailList = emails.split('\n').map(email => email.trim()).filter(email => email !== '');
 
-    const emailList = emails.split('\n').map(email => email.trim()).filter(email => email);
-
-    // ← FIX: parse tanggal string menjadi Date lokal (tanpa UTC offset)
-    const [year, month, day] = createdAt.split('-');
-    const createdDate = new Date(+year, +month - 1, +day); // bulan = 0-based
+    const addedEmails = [];
+    const skippedEmails = [];
 
     for (const email of emailList) {
+        const existing = await Email.findOne({ email });
+
+        if (existing) {
+            skippedEmails.push(email);
+            continue; // Lewatkan jika sudah ada
+        }
+
         const newEmail = new Email({
             email,
             password,
-            createdAt: createdDate, // ← gunakan hasil parsing
+            createdAt,
             activeStatus,
             soldStatus,
             ekStatus,
             ytbTrial
         });
+
         await newEmail.save();
+        addedEmails.push(email);
     }
 
-    res.redirect('/');
+    res.render('addResult', { addedEmails, skippedEmails });
 });
 
 app.get('/edit/:email', isAuthenticated, async (req, res) => {
@@ -195,20 +202,34 @@ app.get('/search', isAuthenticated, async (req, res) => {
 
 app.get('/stats', isAuthenticated, async (req, res) => {
     const emails = await Email.find();
+
     const totalEmails = emails.length;
     const activeEmails = emails.filter(e => e.activeStatus === 'active').length;
     const inactiveEmails = emails.filter(e => e.activeStatus === 'inactive').length;
     const soldEmails = emails.filter(e => e.soldStatus === 'sold').length;
     const notSoldEmails = emails.filter(e => e.soldStatus === 'not sold' && e.activeStatus === 'active').length;
 
-    // Calculate emails by year
     const years = emails.reduce((acc, { createdAt }) => {
         const year = new Date(createdAt).getFullYear();
         acc[year] = (acc[year] || 0) + 1;
         return acc;
     }, {});
 
-    // Prepare data for the chart
+    // === Statistik tambahan ===
+    const ytbOn = emails.filter(e => e.ytbTrial === 'on').length;
+    const ytbOnNotSold = emails.filter(e => e.ytbTrial === 'on' && e.soldStatus === 'not sold').length;
+
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const gmailThisMonth = emails.filter(e =>
+        e.email.includes('@gmail.com') &&
+        new Date(e.createdAt) >= firstDayOfMonth
+    ).length;
+
+    const pakeYtb = emails.filter(e => e.soldStatus === 'pake ytb').length;
+    const sdYtb = emails.filter(e => e.soldStatus === 'sold ytb').length;
+
+    // === Grafik per tanggal ===
     const emailStats = {
         dates: [],
         counts: []
@@ -216,8 +237,7 @@ app.get('/stats', isAuthenticated, async (req, res) => {
 
     const emailCountByDate = emails.reduce((acc, email) => {
         const date = new Date(email.createdAt).toISOString().split('T')[0];
-        if (!acc[date]) acc[date] = 0;
-        acc[date]++;
+        acc[date] = (acc[date] || 0) + 1;
         return acc;
     }, {});
 
@@ -234,7 +254,12 @@ app.get('/stats', isAuthenticated, async (req, res) => {
         notSoldEmails,
         years,
         emailStats,
-        searchQuery: '' // pass an empty search query
+        ytbOn,
+        ytbOnNotSold,
+        gmailThisMonth,
+        pakeYtb,
+        sdYtb,
+        searchQuery: ''
     });
 });
 
@@ -266,7 +291,16 @@ app.get('/stats/:year/:month', isAuthenticated, async (req, res) => {
 
 app.get('/status/:status', isAuthenticated, async (req, res) => {
     const { status } = req.params;
-    const emails = await Email.find({ soldStatus: status, activeStatus: 'active' }).sort({ createdAt: -1 });
+    let query = {};
+
+    // Cek apakah ini status spesial
+    if (status === 'ytbtrial-on') {
+        query = { ytbTrial: 'on', activeStatus: 'active', soldStatus: "not sold" };
+    } else {
+        query = { soldStatus: status, activeStatus: 'active' };
+    }
+
+    const emails = await Email.find(query).sort({ createdAt: -1 });
     res.render('index', { emails, searchQuery: '' });
 });
 
@@ -303,4 +337,3 @@ app.post('/edit-status/:email', async (req, res) => {
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
 });
-
