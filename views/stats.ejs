@@ -59,7 +59,7 @@
 
           <div class="stat-card">
             <div>
-              <h6 class="stat-title"><a href="/status/inactive">Inactive Emails</a></h6>
+              <h6 class="stat-title">Inactive Emails</a></h6>
               <h4 class="stat-value"><%= inactiveEmails %> <span class="text-danger">-2%</span></h4>
             </div>
             <div class="stat-icon bg-gradient-red"><i class="fas fa-times-circle"></i></div>
@@ -80,6 +80,22 @@
             </div>
             <div class="stat-icon bg-gradient-blue"><i class="fas fa-ban"></i></div>
           </div>
+          
+          <div class="stat-card">
+            <div>
+              <h6 class="stat-title"><a href="/status/statusFresh">Fresh</a></h6>
+              <h4 class="stat-value"><%= gmailFresh %></h4>
+            </div>
+            <div class="stat-icon bg-gradient-blue"><i class="fas fa-ban"></i></div>
+          </div>
+          
+                   <div class="stat-card">
+            <div>
+              <h6 class="stat-title"><a href="/status/statusBekas">Bekas</a></h6>
+              <h4 class="stat-value"><%= gmailBekas %></h4>
+            </div>
+            <div class="stat-icon bg-gradient-blue"><i class="fas fa-ban"></i></div>
+          </div> 
 
           <div class="stat-card">
             <div>

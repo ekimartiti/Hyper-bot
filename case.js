@@ -14,7 +14,7 @@ const {
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
   makeWaSocket
-} = require("@adiwajshing/baileys")
+} = require("@whiskeysockets/baileys")
 const fs = require('fs');
 const path = require('path');
 const moment = require('moment-timezone');

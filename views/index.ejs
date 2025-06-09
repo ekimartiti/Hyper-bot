@@ -39,6 +39,7 @@
                         <div><strong>Created At:</strong> <%= new Date(email.createdAt).toLocaleDateString('en-GB') %></div>
                         <div><strong>EK Status:</strong> <%= email.ekStatus %></div>
                         <div><strong>YTB Trial:</strong> <%= email.ytbTrial %></div>
+                        <div><strong>Status:</strong> <%= email.status %></div>
 
                         <div class="action-row">
                             <a href="/edit-status/<%= email.email %>"

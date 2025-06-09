@@ -41,7 +41,12 @@
 <select id="ytbTrial" name="ytbTrial">
     <option value="on" <%= email.ytbTrial === 'on' ? 'selected' : '' %>>ON</option>
     <option value="off" <%= email.ytbTrial === 'off' ? 'selected' : '' %>>OFF</option>
-</select>     
+</select>
+
+<select id="status" name="status">
+    <option value="fresh" <%= email.status === 'fresh' ? 'selected' : '' %>>Fresh</option>
+    <option value="bekas" <%= email.status === 'bekas' ? 'selected' : '' %>>Bekas</option>
+</select>
             <button type="submit">Update Email</button>
         </form>
     </div>
