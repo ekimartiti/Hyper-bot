@@ -1,4 +1,8 @@
 const TelegramBot = require('node-telegram-bot-api');
+const QRCode = require('qrcode')
+const crypto = require('crypto')
+const axios = require('axios')
+const mongoose = require('mongoose');
 const fs = require('fs');
 const ADMIN_CHAT_ID = 6720891467;
 const autopromoFile = 'autopromo.json';
@@ -19,17 +23,22 @@ try {
 
 const mongoURI = config.mongoKey;
 const token = config.telekey;
-module.exports = function runTelegramBot(botTele) {
+const keyorkut = config.keyorkut
+const merchant = config.merchant
+const codeqr = config.codeqr
 const bot = new TelegramBot(token, { polling: true });
+//module.exports = function runTelegramBot(botTele)
+module.exports = function runTelegramBot(botTele) {
 // === Log Berhasil Start Bot ===
+let botUsername
 bot.getMe()
   .then((botInfo) => {
-    console.log(`✅ Bot berhasil dijalankan sebagai @${botInfo.username}`);
+    botUsername = botInfo.username
+    console.log(`✅ Bot berhasil dijalankan sebagai @${botUsername}`);
   })
   .catch((err) => {
     console.error('❌ Gagal menginisialisasi bot:', err.message);
   });
-
 // === Deteksi Error Saat Polling (umumnya karena token salah atau koneksi terputus) ===
 bot.on('polling_error', (err) => {
   console.error('📡 Polling error:', err.message);
@@ -42,15 +51,15 @@ bot.on('webhook_error', (err) => {
 
 
 // === Koneksi MongoDB dan Setup ===
-//mongoose.connect(mongoURI, { useNewUrlParser: //true, useUnifiedTopology: true })
+//mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
 //  .then(async () => {
 //    console.log('✅ Connected to MongoDB');
 //    await User.init();
-//    await Group.init();
+ //   await Group.init();
 
     // 🔍 Hapus user dengan chatId undefined/null
-//    const hasil = await User.deleteMany({ chatId: { $in: [null, undefined] } });
-//    console.log(`🧹 User undefined terhapus: ${hasil.deletedCount}`);
+  //  const hasil = await User.deleteMany({ chatId: { $in: [null, undefined] } });
+ //   console.log(`🧹 User undefined terhapus: ${hasil.deletedCount}`);
 //  })
 //  .catch(err => console.error('MongoDB connection error:', err));
 
@@ -97,28 +106,35 @@ function saveAutoPromoState(status) {
  async function cariStat() {
   const emails = await Email.find();
 
-  const gmailFreshStok = emails.filter(e => e.soldStatus === 'not sold' && e.activeStatus === 'active' && e.ytbTrial === 'off').length;
+  const gmailFreshStok = emails.filter(e => e.soldStatus === 'not sold' && e.activeStatus === 'active' && e.ytbTrial === 'off' && e.status === 'fresh').length;
   const gmailBekas = emails.filter(e => e.status === 'bekas' && e.soldStatus === 'not sold').length;
   const ytbOnNotSold = emails.filter(e => e.ytbTrial === 'on' && e.soldStatus === 'not sold').length;
-
-  return { gmailFreshStok, gmailBekas, ytbOnNotSold };
+const soldEmail = emails.filter(e => e.soldStatus === 'sold').length;
+const allEmail = emails.length
+  return { gmailFreshStok, gmailBekas, ytbOnNotSold, soldEmail, allEmail };
 }
 
 async function rms() {
   const { gmailFreshStok, gmailBekas, ytbOnNotSold } = await cariStat();
 
   const teks = `
-**_READY GMAIL!!!_**
-*FRESH* Rp.1300  
-➡️ Stok: *${gmailFreshStok}*
-*BEKAS* Rp.500  
-➡️ Stok: *${gmailBekas}*
-*Trial YouTube* Rp.1600  
-➡️ Stok: *${ytbOnNotSold}*
+*📦 STOK GMAIL TERSEDIA*
 
-👌 Garansi 48 jam  
-Order: [@Eki_strZ](https://t.me/Eki_strZ)
-  `;
+🟢 *GMAIL FRESH* — Rp *1.300*  
+📌 Stok: *${gmailFreshStok}*
+
+🟠 *GMAIL BEKAS* — Rp *500*  
+📌 Stok: *${gmailBekas}*
+
+🔴 *TRIAL YOUTUBE* — Rp *1.600*  
+📌 Stok: *${ytbOnNotSold}*
+
+🛡️ *Garansi 24 Jam*
+
+📲 *Order Sekarang:*  
+🛒 Bot Auto Order: *@${botUsername}*  
+👑 Owner: [@Eki_strZ](https://t.me/Eki_strZ)
+`;
 
   return teks;
 }
@@ -177,7 +193,7 @@ Halo *${safeName}* 👋
 Selamat datang di bot *GUDANG GMAIL* 📨
 
 Gunakan tombol di bawah:
-📝CEK STOK → untuk melihat stok Gmail yang tersedia
+📝CEK STOK → untuk melihat stok tersedia dan melakukan pembelian
 
 Butuh bantuan? Hubungi admin: [@Eki_strZ](https://t.me/Eki_strZ)
     `;
@@ -185,7 +201,8 @@ Butuh bantuan? Hubungi admin: [@Eki_strZ](https://t.me/Eki_strZ)
     return bot.sendMessage(chatId, welcomeMessage, {
       parse_mode: 'Markdown',
       reply_markup: {
-        keyboard: [['📝CEK STOK']],
+        keyboard: [['📝CEK STOK'], ['⚠️ HELP']
+        ],
         resize_keyboard: true,
         one_time_keyboard: false
       }
@@ -194,16 +211,63 @@ Butuh bantuan? Hubungi admin: [@Eki_strZ](https://t.me/Eki_strZ)
 
   // === Handler CEK STOK ===
   if (text === '📝CEK STOK') {
-    try {
-      const pesan = await rms();
-      return bot.sendMessage(chatId, pesan, {
-        parse_mode: 'Markdown'
-      });
-    } catch (err) {
-      console.error('❌ Gagal ambil data stok:', err.message);
-      return bot.sendMessage(chatId, '⚠️ Gagal mengambil data stok. Silakan coba lagi nanti.');
-    }
+  try {
+    const { gmailFreshStok, gmailBekas, ytbOnNotSold, allEmail, soldEmail} = await cariStat();
+const pesan = `
+📦 *STOK TERSEDIA*
+
+🟢 *Gmail Fresh*  
+▫️Harga: Rp1.300  
+▫️Stok: *${gmailFreshStok}*
+
+🟠 *Gmail Bekas*  
+▫️Harga: Rp500  
+▫️Stok: *${gmailBekas}*
+
+🔴 *Gmail Trial YouTube*  
+▫️Harga: Rp1.600  
+▫️Stok: *${ytbOnNotSold}*
+
+📤 *Sudah Terjual:* *${soldEmail}*  
+📊 *Total Email Tersimpan:* *${allEmail}*
+
+🛒 Gunakan tombol *ORDER SEKARANG* untuk membeli!
+`;
+
+    return bot.sendMessage(chatId, pesan, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '🛒 ORDER SEKARANG', callback_data: 'order_sekarang' }
+          ]
+        ]
+      }
+    });
+  } catch (err) {
+    console.error('❌ Gagal ambil data stok:', err.message);
+    return bot.sendMessage(chatId, '⚠️ Gagal mengambil data stok. Silakan coba lagi nanti.');
   }
+}
+else if (text === '⚠️ HELP'){
+  const t = `
+📘 *TUTORIAL ORDER GMAIL*
+
+1️⃣ Ketik /start untuk memulai bot  
+2️⃣ Klik ikon *titik 4 kotak* di samping kolom ketik  
+3️⃣ Pilih menu *📝 CEK STOK* untuk melihat ketersediaan produk  
+4️⃣ Klik *🛒 ORDER SEKARANG* untuk mulai pembelian  
+5️⃣ Pilih jenis dan jumlah produk yang ingin dibeli  
+6️⃣ Lakukan pembayaran dengan *scan QRIS*  
+7️⃣ Produk akan dikirim otomatis setelah pembayaran sukses ✅
+
+📩 *Bantuan langsung?*  
+Hubungi admin: [@Eki_strZ](https://t.me/Eki_strZ)
+`;
+    return bot.sendMessage(chatId, t, {
+      parse_mode: 'Markdown'
+    });
+}
 });
 
 // === Perintah: Kirim Promo ke Semua User ===
@@ -301,7 +365,7 @@ bot.onText(/\/autopromooff/, (msg) => {
 // ========================================
 // Fungsi Ambil Email General
 // ========================================
-const ambilEmail = async (msg, match, tipe) => {
+const ambilEmail = async (msg, match, tipe, cek) => {
   const senderId = msg.chat.id;
 
   if (senderId !== ADMIN_CHAT_ID) {
@@ -330,11 +394,12 @@ const ambilEmail = async (msg, match, tipe) => {
         return bot.sendMessage(senderId, `⚠️ Stok tidak mencukupi!\nStok tersedia: ${stat.gmailFreshStok}`);
       }
       filter.ytbTrial = 'off';
+      filter.status = 'fresh'; 
     } else if (tipe === 'bekas') {
       if (jumlah > stat.gmailBekas) {
         return bot.sendMessage(senderId, `⚠️ Stok tidak mencukupi!\nStok tersedia: ${stat.gmailBekas}`);
       }
-      filter.emailType = 'bekas';
+      filter.status = 'bekas';
     } else if (tipe === 'youtube') {
       if (jumlah > stat.ytbOnNotSold) {
         return bot.sendMessage(senderId, `⚠️ Stok tidak mencukupi!\nStok tersedia: ${stat.ytbOnNotSold}`);
@@ -342,11 +407,13 @@ const ambilEmail = async (msg, match, tipe) => {
       filter.ytbTrial = 'on';
     }
 
-    const emails = await Email.find(filter).limit(jumlah);
+    
+const emails = await Email.find(filter).limit(jumlah);
 
     if (emails.length === 0) {
       return bot.sendMessage(senderId, `⚠️ Tidak ada email ${tipe} yang tersedia.`);
     }
+
 
     const emailList = emails.map(e => e.email).join('\n');
     const filePath = `./data_email_${tipe}.txt`;
@@ -358,11 +425,14 @@ const ambilEmail = async (msg, match, tipe) => {
     });
 
     const ids = emails.map(e => e._id);
+    fs.unlinkSync(filePath);
+if (cek == true ){
+    bot.sendMessage(senderId, `✅ ${emails.length} email ${tipe} berhasil diambil`)  
+}else{
     await Email.updateMany({ _id: { $in: ids } }, { $set: { soldStatus: 'sold' } });
 
-    fs.unlinkSync(filePath);
-
     bot.sendMessage(senderId, `✅ ${emails.length} email ${tipe} berhasil diambil & ditandai sebagai 'sold'.`);
+}
   } catch (err) {
     console.error(`❌ Gagal mengambil email ${tipe}:`, err);
     return bot.sendMessage(senderId, `❌ Gagal mengambil data email ${tipe}.`);
@@ -373,31 +443,455 @@ bot.onText(/\/getemailfresh(?: (\d+))?/, (msg, match) => ambilEmail(msg, match, 
 bot.onText(/\/getemailbekas(?: (\d+))?/, (msg, match) => ambilEmail(msg, match, 'bekas'));
 bot.onText(/\/getemailyoutube(?: (\d+))?/, (msg, match) => ambilEmail(msg, match, 'youtube'));
 
-// === Perintah Admin: Hapus Semua User Telegram ===
-bot.onText(/\/deleteallusers/, async (msg) => {
-  const senderId = msg.chat.id;
-  if (senderId !== ADMIN_CHAT_ID) return bot.sendMessage(senderId, '❌ Kamu tidak punya akses.');
+bot.onText(/\/gtef(?: (\d+))?/, (msg, match) => ambilEmail(msg, match, 'fresh', true));
+bot.onText(/\/gteb(?: (\d+))?/, (msg, match) => ambilEmail(msg, match, 'bekas', true));
+bot.onText(/\/gtey(?: (\d+))?/, (msg, match) => ambilEmail(msg, match, 'youtube', true));
+
+//notif
+const NotifGroup = require('./models/notifGroup');
+
+bot.onText(/\/notifikasion/, async (msg) => {
+  const chatId = msg.chat.id;
+  const fromId = msg.from.id;
+
+  if (msg.chat.type !== 'group' && msg.chat.type !== 'supergroup') {
+    return bot.sendMessage(chatId, '❌ Perintah ini hanya bisa dijalankan di grup.');
+  }
+
+  if (fromId !== ADMIN_CHAT_ID) {
+    return bot.sendMessage(chatId, '❌ Hanya owner bot yang bisa menggunakan perintah ini.');
+  }
 
   try {
-    const result = await User.deleteMany({});
-    bot.sendMessage(senderId, `🗑️ Semua data pengguna berhasil dihapus (${result.deletedCount} pengguna).`);
+    await NotifGroup.create({ chatId });
+    bot.sendMessage(chatId, '✅ Grup ini telah diaktifkan sebagai *Grup Notifikasi Pembelian*.', {
+      parse_mode: 'Markdown'
+    });
   } catch (err) {
-    console.error('❌ Gagal menghapus pengguna:', err.message);
-    bot.sendMessage(senderId, '❌ Terjadi kesalahan saat menghapus data pengguna.');
+    if (err.code === 11000) {
+      bot.sendMessage(chatId, 'ℹ️ Grup ini sudah terdaftar sebagai grup notifikasi.');
+    } else {
+      console.error(err);
+      bot.sendMessage(chatId, '❌ Gagal menyimpan grup notifikasi.');
+    }
   }
 });
 
-// === Perintah Admin: Hapus Semua Grup Telegram ===
-bot.onText(/\/deleteallgroups/, async (msg) => {
-  const senderId = msg.chat.id;
-  if (senderId !== ADMIN_CHAT_ID) return bot.sendMessage(senderId, '❌ Kamu tidak punya akses.');
+async function kirimNotifikasiKeGrup({ user, produk, jumlah, total, waktu, akun }) {
+  try {
+    const notifGroups = await NotifGroup.find();
+
+    const pesan = `
+📢 *PEMBELIAN BERHASIL*
+👤 Pembeli: [${user.first_name}](tg://user?id=${user.id})
+📦 Produk: *${produk}*
+🔢 Jumlah: *${jumlah}*
+💸 Total: *Rp${total.toLocaleString()}*
+🕰️ Waktu: *${waktu.toLocaleString()}*
+
+✅ Akun Terkirim:
+\`\`\`
+${akun.join('\n')}
+\`\`\`
+`;
+
+    for (const group of notifGroups) {
+      await bot.sendMessage(group.chatId, pesan, { parse_mode: 'Markdown' });
+    }
+  } catch (err) {
+    console.error('❌ Gagal kirim notifikasi ke grup:', err.message);
+  }
+}
+
+bot.onText(/\/hapusnotifikasi/, async (msg) => {
+  if (msg.from.id !== ADMIN_CHAT_ID) return;
+  await NotifGroup.deleteOne({ chatId: msg.chat.id });
+  bot.sendMessage(msg.chat.id, '🗑️ Grup ini tidak lagi menjadi grup notifikasi.');
+});
+
+///orderr
+const orderState = new Map(); // Menyimpan status order user
+global.pendingTransactions = {
+}
+const reservedStock = {
+  'Gmail Fresh': 0,
+  'Gmail Bekas': 0,
+  'Gmail Trial YouTube': 0
+};
+
+function getAvailableStock(namaProduk, totalStok) {
+  return totalStok - (reservedStock[namaProduk] || 0);
+}
+
+bot.on('callback_query', async (callbackQuery) => {
+  const msg = callbackQuery.message;
+  const chatId = msg.chat.id;
+  const userId = callbackQuery.from.id;
+  const data = callbackQuery.data;
+
+  await bot.answerCallbackQuery(callbackQuery.id);
+
+  // ➤ 1. Tampilkan Pilihan Produk
+  if (data === 'order_sekarang') {
+    try {
+      const { gmailFreshStok, gmailBekas, ytbOnNotSold } = await cariStat();
+
+      const pesan = `
+*🛒 PILIH PRODUK*
+
+(1) *GMAIL FRESH* - Rp1.300  
+➡️ Stok: *${gmailFreshStok}*
+
+(2) *GMAIL BEKAS* - Rp500  
+➡️ Stok: *${gmailBekas}*
+
+(3) *GMAIL Trial YouTube* - Rp1.600  
+➡️ Stok: *${ytbOnNotSold}*
+`;
+
+      await bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+        chat_id: chatId,
+        message_id: msg.message_id
+      });
+
+      return bot.sendMessage(chatId, pesan, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '1', callback_data: 'order_fresh' },
+              { text: '2', callback_data: 'order_bekas' },
+              { text: '3', callback_data: 'order_ytb' }
+            ]
+          ]
+        }
+      });
+    } catch (err) {
+      console.error('❌ Gagal ambil stok:', err);
+      return bot.sendMessage(chatId, '⚠️ Gagal mengambil data produk.');
+    }
+  }
+
+  // ➤ 2. Pilih Produk
+  if (['order_fresh', 'order_bekas', 'order_ytb'].includes(data)) {
+    const produkMap = {
+      order_fresh: 'Gmail Fresh',
+      order_bekas: 'Gmail Bekas',
+      order_ytb: 'Gmail Trial YouTube'
+    };
+
+    const { gmailFreshStok, gmailBekas, ytbOnNotSold } = await cariStat();
+
+    const stokMap = {
+      'Gmail Fresh': gmailFreshStok,
+      'Gmail Bekas': gmailBekas,
+      'Gmail Trial YouTube': ytbOnNotSold
+    };
+
+    const produk = produkMap[data];
+    const jumlah = 1;
+
+    await bot.editMessageReplyMarkup({ inline_keyboard: [] }, {
+      chat_id: chatId,
+      message_id: msg.message_id
+    });
+
+    orderState.set(userId, { produk, jumlah, stok: stokMap[produk] });
+
+    return bot.sendMessage(chatId, `📦 Produk terpilih *${produk}*\njumlah:`, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: '➖', callback_data: 'kurang' },
+            { text: `${jumlah}`, callback_data: 'dummy' },
+            { text: '➕', callback_data: 'tambah' }
+          ],
+          [
+            { text: '✅ Konfirmasi', callback_data: 'konfirmasi_order' }
+          ]
+        ]
+      }
+    });
+  }
+
+  // ➤ 3. Tambah/Kurang Jumlah Produk
+  if (data === 'tambah' || data === 'kurang') {
+    const order = orderState.get(userId);
+    if (!order) return;
+
+    const { jumlah, stok } = order;
+
+    if (data === 'tambah') {
+      if (jumlah >= stok) {
+        return bot.answerCallbackQuery(callbackQuery.id, {
+          text: '❗️Jumlah sudah maksimal sesuai stok!',
+          show_alert: true
+        });
+      }
+      order.jumlah++;
+    }
+
+    if (data === 'kurang') {
+      if (jumlah <= 1) {
+        return bot.answerCallbackQuery(callbackQuery.id, {
+          text: '❗️Minimal 1 produk.',
+          show_alert: true
+        });
+      }
+      order.jumlah--;
+    }
+
+    orderState.set(userId, order);
+    const bisaKonfirmasi = order.jumlah <= order.stok;
+
+    return bot.editMessageReplyMarkup({
+      inline_keyboard: [
+        [
+          { text: '➖', callback_data: 'kurang' },
+          { text: `${order.jumlah}`, callback_data: 'dummy' },
+          { text: '➕', callback_data: 'tambah' }
+        ],
+        [
+          bisaKonfirmasi
+            ? { text: '✅ Konfirmasi', callback_data: 'konfirmasi_order' }
+            : { text: '❌ Melebihi stok', callback_data: 'dummy' }
+        ]
+      ]
+    }, {
+      chat_id: chatId,
+      message_id: msg.message_id
+    });
+  }
+
+  // ➤ 4. Konfirmasi Order dan Kirim QRIS
+  if (data === 'konfirmasi_order') {
+const order = orderState.get(userId);
+if (!order) return;
+
+const { produk, jumlah } = order;
+
+const stokTersedia = getAvailableStock(produk, order.stok);
+if (jumlah > stokTersedia) {
+  return bot.sendMessage(chatId, `❌ Maaf, stok tidak cukup.\nStok tersisa: ${stokTersedia}\nSilakan kurangi jumlah.`);
+}
+
+// ✅ Reserve stok
+reservedStock[produk] += jumlah;
+
+    try {
+      const { produk, jumlah } = order;
+      const hargaPerProduk = produk === 'Gmail Fresh' ? 1300 : produk === 'Gmail Bekas' ? 500 : 1600;
+      const baseAmount = jumlah * hargaPerProduk;
+      orderState.delete(userId); // Hapus status
+
+      // CRC untuk QRIS
+      function convertCRC16(str) {
+        let crc = 0xFFFF;
+        for (let c = 0; c < str.length; c++) {
+          crc ^= str.charCodeAt(c) << 8;
+          for (let i = 0; i < 8; i++) {
+            crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
+          }
+        }
+        return ("000" + (crc & 0xFFFF).toString(16).toUpperCase()).slice(-4);
+      }
+
+      // Buat QRIS
+ async function generateUniqueFee(baseAmount) {
+  const maxRetry = 10;
 
   try {
-    const result = await Group.deleteMany({});
-    bot.sendMessage(senderId, `🗑️ Semua data grup berhasil dihapus (${result.deletedCount} grup).`);
+    for (let i = 0; i < maxRetry; i++) {
+      const fee = Math.floor(Math.random() * 200) + 1;
+      const totalAmount = baseAmount + fee;
+
+      // Cek apakah amount ini sudah ada di mutasi
+      const res = await axios.get(`https://gateway.okeconnect.com/api/mutasi/qris/${merchant}/${keyorkut}`);
+      const isDuplicate = res.data?.data?.some(tx => tx.amount === totalAmount && tx.type === "CR");
+
+      if (!isDuplicate) {
+        return { success: true, fee, totalAmount };
+      }
+    }
+
+    // Gagal setelah max percobaan
+    return { success: false };
   } catch (err) {
-    console.error('❌ Gagal menghapus grup:', err.message);
-    bot.sendMessage(senderId, '❌ Terjadi kesalahan saat menghapus data grup.');
+    console.error("❌ Gagal generate QR unik:", err.message);
+    return { success: false };
+  }
+}
+      
+      async function createQrisPayment(baseAmount, chatId) {
+  const feeResult = await generateUniqueFee(baseAmount);
+
+  if (!feeResult.success) {
+    await bot.sendMessage(chatId, '⚠️ Gagal membuat QR unik. Silakan coba beberapa saat lagi.');
+    return { status: false }; // atau bisa lempar error kalau kamu suka cara keras
+  }
+
+  const { fee, totalAmount } = feeResult;
+
+  // Lanjut buat QRIS
+  let qrisData = codeqr.slice(0, -4);
+  const step1 = qrisData.replace("010211", "010212");
+  const step2 = step1.split("5802ID");
+  const uang = "54" + ("0" + totalAmount.toString().length).slice(-2) + totalAmount + "5802ID";
+  const finalQrisString = step2[0] + uang + step2[1];
+  const qrisWithCRC = finalQrisString + convertCRC16(finalQrisString);
+
+  const buffer = await QRCode.toBuffer(qrisWithCRC);
+
+  return {
+    status: true,
+    result: {
+      kodeTransaksi: 'QR-' + crypto.randomBytes(4).toString('hex').toUpperCase(),
+      baseAmount,
+      fee,
+      totalAmount,
+      buffer
+    }
+  };
+}
+// Jika ada transaksi lama, clear interval, hapus pesan QR dan delete transaksinya
+if (global.pendingTransactions[userId]) {
+  const prevTxn = global.pendingTransactions[userId];
+
+  // Hapus pesan QR lama jika masih ada
+  if (prevTxn.photoMsgId) {
+    try {
+      await bot.deleteMessage(chatId, prevTxn.photoMsgId);
+    } catch (e) {
+      console.warn(`⚠️ Gagal hapus pesan QR lama:`, e.message);
+    }
+  }
+
+  clearInterval(prevTxn.checkInterval);
+  delete global.pendingTransactions[userId];
+}
+
+//tes dulu supaya pas debuging biar murah 
+ ///totalAmount pake ini kalo udah
+//tes = 50
+      const qrisData = await createQrisPayment(baseAmount);
+if (!qrisData.status) return; // Stop kalau gagal
+
+      if (!Buffer.isBuffer(qrisData.result.buffer)) {
+        console.error('❌ QR buffer tidak valid:', qrisData.result.buffer);
+        return bot.sendMessage(chatId, '⚠️ Gagal membuat QR Code pembayaran.');
+      }
+
+      const caption = `*🧾 DETAIL PEMBAYARAN*\n\n` +
+        `- Kode Transaksi: ${qrisData.result.kodeTransaksi}\n` +
+        `- Produk: ${produk}\n` +
+        `- Jumlah: ${jumlah}\n` +
+        `- Harga: Rp ${qrisData.result.baseAmount.toLocaleString('id-ID')}\n` +
+        `- Fee: Rp ${qrisData.result.fee}\n` +
+        `- Total: Rp ${qrisData.result.totalAmount.toLocaleString('id-ID')}\n\n` +
+        `Silakan scan QRIS di atas.\n🕒Berlaku 10 menit.`;
+
+      const photoMsg = await bot.sendPhoto(chatId, qrisData.result.buffer, { caption, parse_mode: 'Markdown' });
+
+      // Simpan transaksi
+      global.pendingTransactions[userId] = {
+  produk,
+  jumlah,
+  isActive: true,
+  photoMsgId: photoMsg.message_id,
+  startTime: Date.now(),
+  checkInterval: setInterval(async () => {
+          try {
+            const txn = global.pendingTransactions[userId];
+if (!txn) return;
+
+const { produk, jumlah } = txn;
+            const res = await axios.get(`https://gateway.okeconnect.com/api/mutasi/qris/${merchant}/${keyorkut}`);
+            const match = res.data?.data?.find(tx =>
+              tx.amount == qrisData.result.totalAmount && tx.type === "CR");
+            if (match) {
+              clearInterval(txn.checkInterval);
+              await bot.deleteMessage(chatId, photoMsg.message_id);
+await bot.sendMessage(chatId, `✅ *PEMBAYARAN BERHASIL!*\n\n` +
+`👤 *Nama Pembeli*    : ${callbackQuery.from.first_name || 'Tidak diketahui'}\n` +
+`🆔 *Telegram ID*     : ${userId}\n` +
+`📦 *Pesanan*         : ${jumlah}x ${produk}\n` +
+`🧾 *Kode Transaksi*  : ${qrisData.result.kodeTransaksi}\n` +
+`💰 *Harga Satuan*    : Rp ${(qrisData.result.baseAmount / jumlah).toLocaleString('id-ID')}\n` +
+`➕ *Fee Unik*         : Rp ${qrisData.result.fee.toLocaleString('id-ID')}\n` +
+`💳 *Total Bayar*     : Rp ${qrisData.result.totalAmount.toLocaleString('id-ID')}\n` +
+`⏱️ *Waktu Bayar*     : ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}\n\n` +
+`📤 *Produk akan segera dikirim...*`, {
+  parse_mode: 'Markdown'
+});
+              //kirim email
+              try{
+    const stat = await cariStat();
+    let filter = {
+      soldStatus: 'not sold',
+      activeStatus: 'active'
+    };
+
+    if (produk === 'Gmail Fresh') {
+      filter.ytbTrial = 'off';
+     filter.status = 'fresh'; 
+    } else if (produk === 'Gmail Bekas') {
+      filter.status = 'bekas';
+    } else if (produk === 'Gmail Trial YouTube') {
+      filter.ytbTrial = 'on';
+    }                
+                
+   const emails = await Email.find(filter).limit(jumlah);
+
+// Format: email | password
+const emailList = emails.map(e => `${e.email} | ${e.password}`).join('\n');
+
+const filePath = `./data_email_${produk}.txt`;
+fs.writeFileSync(filePath, emailList);
+    await bot.sendDocument(chatId, filePath, {}, {
+      filename: `email_${produk}_${emails.length}.txt`,
+      contentType: 'text/plain'
+    });
+
+    const ids = emails.map(e => e._id);
+   await kirimNotifikasiKeGrup({
+  user: callbackQuery.from,
+  produk: order.produk,
+  jumlah: order.jumlah,
+  total: qrisData.result.totalAmount, // dari QR generator
+  waktu: new Date(),
+  akun: emails.map(e => e.email) // yang dikirim ke pembeli
+}); 
+    await Email.updateMany({ _id: { $in: ids } }, { $set: { soldStatus: 'sold' } });
+reservedStock[produk] -= jumlah;
+    fs.unlinkSync(filePath);
+
+  } catch (err) {
+    console.error(`❌ Gagal mengambil email ${produk}:`, err);
+    return bot.sendMessage(chatId, `❌ Gagal mengambil data email ${produk}.`);
+  }           
+              
+              
+              delete global.pendingTransactions[userId];
+              return;
+            }
+
+            if (Date.now() - txn.startTime > 10 * 60000) {
+            reservedStock[produk] -= jumlah;  
+              clearInterval(txn.checkInterval);
+              await bot.deleteMessage(chatId, photoMsg.message_id);
+              await bot.sendMessage(chatId, `❌ Pembayaran kadaluarsa. Silakan ulangi pemesanan.`);
+              delete global.pendingTransactions[userId];
+            }
+          } catch (e) {
+            console.error('❌ Cek pembayaran gagal:', e.message);
+          }
+        }, 10000)
+      };
+    } catch (err) {
+      console.error('❌ ERROR KONFIRMASI:', err);
+      return bot.sendMessage(chatId, 'Terjadi kesalahan saat konfirmasi order.');
+    }
   }
 });
 }
