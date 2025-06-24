@@ -129,7 +129,7 @@ async function rms() {
 🔴 *TRIAL YOUTUBE* — Rp *1.600*  
 📌 Stok: *${ytbOnNotSold}*
 
-🛡️ *Garansi 24 Jam*
+🛡️ *Garansi 48 Jam*
 
 📲 *Order Sekarang:*  
 🛒 Bot Auto Order: *@${botUsername}*  
