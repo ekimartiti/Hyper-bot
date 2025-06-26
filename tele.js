@@ -270,22 +270,49 @@ Hubungi admin: [@Eki_strZ](https://t.me/Eki_strZ)
 }
 });
 
-// === Perintah: Kirim Promo ke Semua User ===
+// ===  Perintah: Kirim Promo ke Semua User ===
 bot.onText(/\/sendpromot/, async (msg) => {
   const senderId = msg.chat.id;
-  if (senderId !== ADMIN_CHAT_ID) return bot.sendMessage(senderId, '❌ Kamu tidak punya akses.');
+  if (senderId !== ADMIN_CHAT_ID) {
+    return bot.sendMessage(senderId, '❌ Kamu tidak punya akses.');
+  }
+
   const users = await User.find();
-for (const user of users) {
-  const userId = user.chatId;
+  let success = 0;
+  let removed = 0;
+
+  for (const user of users) {
+    const userId = user.chatId;
+
     try {
-      const pesan = await rms();
+      const pesan = await rms(); // asumsi ini fungsi random promosi
       await bot.sendMessage(userId, pesan, { parse_mode: 'Markdown' });
+      success++;
     } catch (err) {
-      console.error(`Gagal kirim ke ${userId}:`, err.message);
+      console.error(`❌ Gagal kirim ke ${userId}:`, err.message);
+
+      // Hapus user jika error karena user tidak valid
+      if (
+        err.message.includes('Forbidden') ||
+        err.message.includes('chat not found')
+      ) {
+        await User.deleteOne({ chatId: userId });
+        removed++;
+        console.log(`🧹 User ${userId} dihapus dari database.`);
+      }
     }
   }
 
-  bot.sendMessage(senderId, `✅ Promo terkirim ke ${users.length} pengguna.`);
+  await bot.sendMessage(senderId, `✅ Promo terkirim ke ${success} pengguna.\n🧹 ${removed} user dihapus karena tidak valid.`);
+});
+
+bot.onText(/\/cekuser/, async (msg) => {
+  if (msg.chat.id !== ADMIN_CHAT_ID) return;
+
+  const count = await User.countDocuments();
+  bot.sendMessage(msg.chat.id, `📊 Total user aktif di database: *${count}*`, {
+    parse_mode: 'Markdown'
+  });
 });
 
 // === Perintah Broadcast Custom ===
@@ -450,6 +477,7 @@ bot.onText(/\/gtey(?: (\d+))?/, (msg, match) => ambilEmail(msg, match, 'youtube'
 //notif
 const NotifGroup = require('./models/notifGroup');
 
+
 bot.onText(/\/notifikasion/, async (msg) => {
   const chatId = msg.chat.id;
   const fromId = msg.from.id;
@@ -463,27 +491,37 @@ bot.onText(/\/notifikasion/, async (msg) => {
   }
 
   try {
+    // Pastikan tidak ada chatId duplikat lama yang mati
+    const existing = await NotifGroup.findOne({ chatId });
+
+    if (existing) {
+      return bot.sendMessage(chatId, 'ℹ️ Grup ini sudah terdaftar sebagai grup notifikasi.');
+    }
+
+    // Hapus entri dengan chatId lama (< -1000000000000)
+    await NotifGroup.deleteMany({ chatId: { $lt: -1000000000000 } });
+
+    // Tambahkan yang baru
     await NotifGroup.create({ chatId });
+
     bot.sendMessage(chatId, '✅ Grup ini telah diaktifkan sebagai *Grup Notifikasi Pembelian*.', {
       parse_mode: 'Markdown'
     });
+
   } catch (err) {
-    if (err.code === 11000) {
-      bot.sendMessage(chatId, 'ℹ️ Grup ini sudah terdaftar sebagai grup notifikasi.');
-    } else {
-      console.error(err);
-      bot.sendMessage(chatId, '❌ Gagal menyimpan grup notifikasi.');
-    }
+    console.error('❌ Error di /notifikasion:', err);
+    bot.sendMessage(chatId, '❌ Gagal menyimpan grup notifikasi.');
   }
 });
 
 async function kirimNotifikasiKeGrup({ user, produk, jumlah, total, waktu, akun }) {
-  try {
-    const notifGroups = await NotifGroup.find();
+  const escapeMD = (text) => String(text).replace(/([_*[\]()~`>#+=|{}.!-])/g, '\\$1');
+  const safeName = escapeMD(user.first_name || 'User');
+  const akunList = akun.join('\n'); // tanpa escape
 
-    const pesan = `
+  const pesan = `
 📢 *PEMBELIAN BERHASIL*
-👤 Pembeli: [${user.first_name}](tg://user?id=${user.id})
+👤 Pembeli: [${safeName}](tg://user?id=${user.id})
 📦 Produk: *${produk}*
 🔢 Jumlah: *${jumlah}*
 💸 Total: *Rp${total.toLocaleString()}*
@@ -491,24 +529,103 @@ async function kirimNotifikasiKeGrup({ user, produk, jumlah, total, waktu, akun 
 
 ✅ Akun Terkirim:
 \`\`\`
-${akun.join('\n')}
+${akunList}
 \`\`\`
 `;
 
-    for (const group of notifGroups) {
+  const notifGroups = await NotifGroup.find();
+  let success = 0;
+  let failed = 0;
+
+  for (const group of notifGroups) {
+    try {
       await bot.sendMessage(group.chatId, pesan, { parse_mode: 'Markdown' });
+      success++;
+    } catch (err) {
+      failed++;
+      console.error(`❌ Gagal kirim ke grup ${group.chatId}:`, err.message);
+    }
+  }
+
+  // Fallback ke admin jika semua grup gagal
+  if (success === 0) {
+    try {
+      await bot.sendMessage(ADMIN_CHAT_ID, `⚠️ *Fallback Notifikasi!*\n\nSemua grup notifikasi gagal menerima pesan. Berikut isi pesan:\n\n${pesan}`, {
+        parse_mode: 'Markdown'
+      });
+    } catch (err) {
+      console.error('❌ Gagal kirim fallback notifikasi ke admin:', err.message);
+    }
+  }
+}
+bot.onText(/\/hapusnotifikasi/, async (msg) => {
+  if (msg.from.id !== ADMIN_CHAT_ID) return;
+
+  try {
+    const result = await NotifGroup.deleteOne({ chatId: msg.chat.id });
+
+    if (result.deletedCount === 1) {
+      bot.sendMessage(msg.chat.id, '🗑️ Grup ini tidak lagi menjadi grup notifikasi.');
+    } else {
+      bot.sendMessage(msg.chat.id, '⚠️ Grup ini *tidak terdaftar* sebagai grup notifikasi (mungkin ID-nya berbeda).');
     }
   } catch (err) {
-    console.error('❌ Gagal kirim notifikasi ke grup:', err.message);
+    console.error('❌ Gagal hapus grup notifikasi:', err.message);
+    bot.sendMessage(msg.chat.id, '❌ Gagal menghapus grup notifikasi.');
+  }
+});
+bot.onText(/\/nl/, async (msg) => {
+  if (msg.chat.id !== ADMIN_CHAT_ID) return;
+
+  const groups = await NotifGroup.find();
+  const list = groups.map(g => `• \`${g.chatId}\``).join('\n') || 'Tidak ada grup terdaftar.';
+
+  bot.sendMessage(msg.chat.id, `📋 *Daftar Grup Notifikasi:*\n${list}`, { parse_mode: 'Markdown' });
+});
+bot.onText(/\/bersihkanGrupNotif/, async (msg) => {
+  if (msg.chat.id !== ADMIN_CHAT_ID) return;
+
+  const notifGroups = await NotifGroup.find();
+  let countDeleted = 0;
+
+  for (const group of notifGroups) {
+    try {
+      await bot.sendMessage(group.chatId, '🔍 Tes koneksi grup notifikasi');
+    } catch (err) {
+      if (
+        err.message.includes('upgraded to a supergroup') ||
+        err.message.includes('chat not found') ||
+        err.message.includes('Forbidden')
+      ) {
+        await NotifGroup.deleteOne({ chatId: group.chatId });
+        countDeleted++;
+        console.log(`🧹 Dihapus: ${group.chatId} karena error: ${err.message}`);
+      }
+    }
+  }
+
+  bot.sendMessage(msg.chat.id, `✅ Selesai membersihkan. Grup invalid dihapus: ${countDeleted}`);
+});
+
+async function validasiGrupNotifikasi() {
+  const notifGroups = await NotifGroup.find();
+  for (const group of notifGroups) {
+    try {
+      await bot.sendMessage(group.chatId, '🧪 Tes koneksi grup notifikasi');
+    } catch (err) {
+      if (
+        err.message.includes('upgraded') ||
+        err.message.includes('chat not found') ||
+        err.message.includes('Forbidden')
+      ) {
+        await NotifGroup.updateOne({ chatId: group.chatId }, { $set: { lastKnownStatus: 'dead' } });
+        await bot.sendMessage(ADMIN_CHAT_ID, `⚠️ Grup notifikasi ${group.chatId} sudah tidak valid. Harap gunakan /notifikasion ulang.`);
+      }
+    }
   }
 }
 
-bot.onText(/\/hapusnotifikasi/, async (msg) => {
-  if (msg.from.id !== ADMIN_CHAT_ID) return;
-  await NotifGroup.deleteOne({ chatId: msg.chat.id });
-  bot.sendMessage(msg.chat.id, '🗑️ Grup ini tidak lagi menjadi grup notifikasi.');
-});
-
+setInterval(validasiGrupNotifikasi, 6 * 60 * 60 * 1000); // Setiap 6 jam
 ///orderr
 const orderState = new Map(); // Menyimpan status order user
 global.pendingTransactions = {
