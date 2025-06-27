@@ -7,7 +7,9 @@ const fs = require('fs');
 const ADMIN_CHAT_ID = 6720891467;
 const autopromoFile = 'autopromo.json';
 const Email = require('./models/email');
-
+function escapeMarkdown(text = '') {
+  return text.replace(/([_*\[\]()~`>#+=|{}.!-])/g, '\\$1');
+}
 let isAutoPromoOn = false;
 const User = require('./models/teleuser');
 const Group = require('./models/group');
@@ -515,23 +517,29 @@ bot.onText(/\/notifikasion/, async (msg) => {
 });
 
 async function kirimNotifikasiKeGrup({ user, produk, jumlah, total, waktu, akun }) {
-  const escapeMD = (text) => String(text).replace(/([_*[\]()~`>#+=|{}.!-])/g, '\\$1');
-  const safeName = escapeMD(user.first_name || 'User');
-  const akunList = akun.join('\n'); // tanpa escape
+  const escapeMD = (text = '') => String(text).replace(/([_*[\]()~`>#+=|{}.!-])/g, '\\$1');
 
-  const pesan = `
-📢 *PEMBELIAN BERHASIL*
+  const safeName = escapeMD(user.first_name || 'User');
+  const safeProduk = escapeMD(produk);
+  const safeJumlah = escapeMD(jumlah);
+  const safeTotal = escapeMD(`Rp${total.toLocaleString()}`);
+  const safeWaktu = escapeMD(waktu.toLocaleString());
+
+  // Escape isi akun juga agar aman
+  const akunList = akun.map(a => escapeMD(a)).join('\n');
+
+  const pesan = 
+`📢 *PEMBELIAN BERHASIL*
 👤 Pembeli: [${safeName}](tg://user?id=${user.id})
-📦 Produk: *${produk}*
-🔢 Jumlah: *${jumlah}*
-💸 Total: *Rp${total.toLocaleString()}*
-🕰️ Waktu: *${waktu.toLocaleString()}*
+📦 Produk: *${safeProduk}*
+🔢 Jumlah: *${safeJumlah}*
+💸 Total: *${safeTotal}*
+🕰️ Waktu: *${safeWaktu}*
 
 ✅ Akun Terkirim:
 \`\`\`
 ${akunList}
-\`\`\`
-`;
+\`\`\``;
 
   const notifGroups = await NotifGroup.find();
   let success = 0;
@@ -547,10 +555,9 @@ ${akunList}
     }
   }
 
-  // Fallback ke admin jika semua grup gagal
   if (success === 0) {
     try {
-      await bot.sendMessage(ADMIN_CHAT_ID, `⚠️ *Fallback Notifikasi!*\n\nSemua grup notifikasi gagal menerima pesan. Berikut isi pesan:\n\n${pesan}`, {
+      await bot.sendMessage(ADMIN_CHAT_ID, `⚠️ *Fallback Notifikasi!*\n\nSemua grup notifikasi gagal menerima pesan. Berikut isi pesan:\n\n${escapeMD(pesan)}`, {
         parse_mode: 'Markdown'
       });
     } catch (err) {
@@ -635,6 +642,7 @@ const reservedStock = {
   'Gmail Bekas': 0,
   'Gmail Trial YouTube': 0
 };
+const reservedStockPerUser = new Map();
 
 function getAvailableStock(namaProduk, totalStok) {
   return totalStok - (reservedStock[namaProduk] || 0);
@@ -650,6 +658,12 @@ bot.on('callback_query', async (callbackQuery) => {
 
   // ➤ 1. Tampilkan Pilihan Produk
   if (data === 'order_sekarang') {
+    if (reservedStockPerUser.has(userId)) {
+  const prev = reservedStockPerUser.get(userId);
+  reservedStock[prev.produk] -= prev.jumlah;
+  reservedStockPerUser.delete(userId);
+}
+
     try {
       const { gmailFreshStok, gmailBekas, ytbOnNotSold } = await cariStat();
 
@@ -794,7 +808,15 @@ if (jumlah > stokTersedia) {
 }
 
 // ✅ Reserve stok
+// Bersihkan stok lama user (kalau ada)
+const prevReserved = reservedStockPerUser.get(userId);
+if (prevReserved) {
+  reservedStock[prevReserved.produk] -= prevReserved.jumlah;
+}
+
+// Tambahkan stok baru
 reservedStock[produk] += jumlah;
+reservedStockPerUser.set(userId, { produk, jumlah });
 
     try {
       const { produk, jumlah } = order;
@@ -929,18 +951,22 @@ const { produk, jumlah } = txn;
             if (match) {
               clearInterval(txn.checkInterval);
               await bot.deleteMessage(chatId, photoMsg.message_id);
-await bot.sendMessage(chatId, `✅ *PEMBAYARAN BERHASIL!*\n\n` +
-`👤 *Nama Pembeli*    : ${callbackQuery.from.first_name || 'Tidak diketahui'}\n` +
-`🆔 *Telegram ID*     : ${userId}\n` +
-`📦 *Pesanan*         : ${jumlah}x ${produk}\n` +
-`🧾 *Kode Transaksi*  : ${qrisData.result.kodeTransaksi}\n` +
-`💰 *Harga Satuan*    : Rp ${(qrisData.result.baseAmount / jumlah).toLocaleString('id-ID')}\n` +
-`➕ *Fee Unik*         : Rp ${qrisData.result.fee.toLocaleString('id-ID')}\n` +
-`💳 *Total Bayar*     : Rp ${qrisData.result.totalAmount.toLocaleString('id-ID')}\n` +
-`⏱️ *Waktu Bayar*     : ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}\n\n` +
-`📤 *Produk akan segera dikirim...*`, {
-  parse_mode: 'Markdown'
-});
+const namaPembeli = escapeMarkdown(callbackQuery.from.first_name || 'Tidak diketahui');
+const kodeTransaksi = escapeMarkdown(qrisData.result.kodeTransaksi);
+
+await bot.sendMessage(chatId,
+  `✅ *PEMBAYARAN BERHASIL!*\n\n` +
+  `👤 *Nama Pembeli*    : ${namaPembeli}\n` +
+  `🆔 *Telegram ID*     : ${userId}\n` +
+  `📦 *Pesanan*         : ${jumlah}x ${escapeMarkdown(produk)}\n` +
+  `🧾 *Kode Transaksi*  : ${kodeTransaksi}\n` +
+  `💰 *Harga Satuan*    : Rp ${(qrisData.result.baseAmount / jumlah).toLocaleString('id-ID')}\n` +
+  `➕ *Fee Unik*         : Rp ${qrisData.result.fee.toLocaleString('id-ID')}\n` +
+  `💳 *Total Bayar*     : Rp ${qrisData.result.totalAmount.toLocaleString('id-ID')}\n` +
+  `⏱️ *Waktu Bayar*     : ${escapeMarkdown(new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}\n\n` +
+  `📤 *Produk akan segera dikirim...*`,
+  { parse_mode: 'Markdown' }
+);
               //kirim email
               try{
     const stat = await cariStat();
@@ -981,6 +1007,7 @@ fs.writeFileSync(filePath, emailList);
 }); 
     await Email.updateMany({ _id: { $in: ids } }, { $set: { soldStatus: 'sold' } });
 reservedStock[produk] -= jumlah;
+reservedStockPerUser.delete(userId);
     fs.unlinkSync(filePath);
 
   } catch (err) {
@@ -995,6 +1022,7 @@ reservedStock[produk] -= jumlah;
 
             if (Date.now() - txn.startTime > 10 * 60000) {
             reservedStock[produk] -= jumlah;  
+           reservedStockPerUser.delete(userId);
               clearInterval(txn.checkInterval);
               await bot.deleteMessage(chatId, photoMsg.message_id);
               await bot.sendMessage(chatId, `❌ Pembayaran kadaluarsa. Silakan ulangi pemesanan.`);
