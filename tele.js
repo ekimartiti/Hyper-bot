@@ -658,12 +658,6 @@ bot.on('callback_query', async (callbackQuery) => {
 
   // ➤ 1. Tampilkan Pilihan Produk
   if (data === 'order_sekarang') {
-    if (reservedStockPerUser.has(userId)) {
-  const prev = reservedStockPerUser.get(userId);
-  reservedStock[prev.produk] -= prev.jumlah;
-  reservedStockPerUser.delete(userId);
-}
-
     try {
       const { gmailFreshStok, gmailBekas, ytbOnNotSold } = await cariStat();
 
@@ -797,6 +791,11 @@ bot.on('callback_query', async (callbackQuery) => {
 
   // ➤ 4. Konfirmasi Order dan Kirim QRIS
   if (data === 'konfirmasi_order') {
+ if (reservedStockPerUser.has(userId)) {
+  const prev = reservedStockPerUser.get(userId);
+  reservedStock[prev.produk] -= prev.jumlah;
+  reservedStockPerUser.delete(userId);
+}   
 const order = orderState.get(userId);
 if (!order) return;
 
