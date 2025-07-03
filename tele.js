@@ -7,6 +7,7 @@ const fs = require('fs');
 const ADMIN_CHAT_ID = 6720891467;
 const autopromoFile = 'autopromo.json';
 const Email = require('./models/email');
+const { logMessage } = require('./utils/logger');
 function escapeMarkdown(text = '') {
   return text.replace(/([_*\[\]()~`>#+=|{}.!-])/g, '\\$1');
 }
@@ -37,6 +38,10 @@ bot.getMe()
   .then((botInfo) => {
     botUsername = botInfo.username
     console.log(`✅ Bot berhasil dijalankan sebagai @${botUsername}`);
+    config.botUsername = botUsername;
+    fs.writeFileSync("./config.json", JSON.stringify(config, null, 2));
+    
+    
   })
   .catch((err) => {
     console.error('❌ Gagal menginisialisasi bot:', err.message);
@@ -172,8 +177,18 @@ bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
   const chatType = msg.chat.type;
   const text = msg.text?.trim() || '';
-
-  console.log(`[DEBUG] Pesan dari ${chatType} (${chatId}): "${text}"`);
+  logMessage({
+    platform: 'TG',
+    time: new Date(),
+    chatType: msg.chat.type,
+    chatId: msg.chat.id,
+    user: {
+      first_name: msg.from.first_name,
+      username: msg.from.username,
+      id: msg.from.id
+    },
+    text: msg.text
+  });
 
   // Simpan pengguna / grup
   if (chatType === 'private') {

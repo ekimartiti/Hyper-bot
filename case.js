@@ -17,6 +17,8 @@ const {
 } = require("@whiskeysockets/baileys")
 const fs = require('fs');
 const path = require('path');
+const generateName = require('./kaoruFunction/namegenerator')
+
 const moment = require('moment-timezone');
 const util = require('util')
 const chalk = require ('chalk')
@@ -26,6 +28,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const getCmd = (id) => {
   const base64Hash = Buffer.from(id).toString('base64'); // Konversi ke Base64
   let position = null;
+  let _scommand = JSON.parse(fs.readFileSync("./database/scommand.json"));
   Object.keys(_scommand).forEach((i) => {
     if(_scommand[i].id === base64Hash) {
       position = i;
@@ -64,15 +67,42 @@ module.exports = Kaoru = async (Kaoru, m, msg, chatUpdate, store) => {
     let _chats = type === "conversation" && m.message.conversation ? m.message.conversation : type == "imageMessage" && m.message.imageMessage.caption ? m.message.imageMessage.caption : type == "videoMessage" && m.message.videoMessage.caption ? m.message.videoMessage.caption : type == "extendedTextMessage" && m.message.extendedTextMessage.text ? m.message.extendedTextMessage.text : type == "buttonsResponseMessage" && m.message[type].selectedButtonId ? m.message[type].selectedButtonId : type == "stickerMessage" && getCmd(m.message[type].fileSha256.toString("base64")) !== null && getCmd(m.message[type].fileSha256.toString("base64")) !== undefined ? getCmd(m.message[type].fileSha256.toString("base64")) : "";
     const cmd = (type === 'conversation') ? m.message.conversation : (type == 'imageMessage') ? m.message.imageMessage.caption : (type == 'videoMessage') ? m.message.videoMessage.caption : (type == 'extendedTextMessage') ? m.message.extendedTextMessage.text : (type == 'buttonsResponseMessage') ? m.message.buttonsResponseMessage.selectedButtonId : (type == 'listResponseMessage') ? m.message.listResponseMessage.singleSelectReply.selectedRowId : (type === 'interactiveResponseMessage') ? JSON.parse(m.message.interactiveResponseMessage.nativeFlowResponseMessage.paramsJson).id : (type == 'templateButtonReplyMessage') ? m.message.templateButtonReplyMessage.selectedId : (type === 'messageContextInfo') ? (m.message.buttonsResponseMessage?.selectedButtonId || m.message.listResponseMessage?.singleSelectReply.selectedRowId || m.text) : (type == 'stickerMessage') && (getCmd(m.message.stickerMessage.fileSha256.toString('hex')) !== null && getCmd(m.message.stickerMessage.fileSha256.toString('base64')) !== undefined) ? getCmd(m.message.stickerMessage.fileSha256.toString('base64')) : "".slice(1).trim().split(/ +/).shift().toLowerCase()
     const from = m.key.remoteJid
-    var body = (m.mtype === 'interactiveResponseMessage') ? JSON.parse(m.message.interactiveResponseMessage.nativeFlowResponseMessage.paramsJson).id : (m.mtype === 'conversation') ? m.message.conversation : (m.mtype == 'imageMessage') ? m.message.imageMessage.caption : (m.mtype == 'videoMessage') ? m.message.videoMessage.caption : (m.mtype == 'extendedTextMessage') ? m.message.extendedTextMessage.text : (m.mtype == 'buttonsResponseMessage') ? m.message.buttonsResponseMessage.selectedButtonId : (m.mtype == 'listResponseMessage') ? m.message.listResponseMessage.singleSelectReply.selectedRowId : (m.mtype == 'templateButtonReplyMessage') ? m.message.templateButtonReplyMessage.selectedId : (m.mtype == 'messageContextInfo') ? (m.message.buttonsResponseMessage?.selectedButtonId || m.message.listResponseMessage?.singleSelectReply.selectedRowId || m.text) : (type == 'stickerMessage') && (getCmd(m.message.stickerMessage.fileSha256.toString('base64')) !== null && getCmd(m.message.stickerMessage.fileSha256.toString('base64')) !== undefined) ? getCmd(m.message.stickerMessage.fileSha256.toString('base64')) : ""
-    
+    // === Body Aman ===
+var body =
+  m.mtype === 'interactiveResponseMessage'
+    ? JSON.parse(m.message.interactiveResponseMessage.nativeFlowResponseMessage.paramsJson).id
+    : m.mtype === 'conversation'
+    ? m.message.conversation
+    : m.mtype === 'imageMessage'
+    ? m.message.imageMessage.caption
+    : m.mtype === 'videoMessage'
+    ? m.message.videoMessage.caption
+    : m.mtype === 'extendedTextMessage'
+    ? m.message.extendedTextMessage.text
+    : m.mtype === 'buttonsResponseMessage'
+    ? m.message.buttonsResponseMessage.selectedButtonId
+    : m.mtype === 'listResponseMessage'
+    ? m.message.listResponseMessage.singleSelectReply.selectedRowId
+    : m.mtype === 'templateButtonReplyMessage'
+    ? m.message.templateButtonReplyMessage.selectedId
+    : m.mtype === 'messageContextInfo'
+    ? m.message.buttonsResponseMessage?.selectedButtonId || m.message.listResponseMessage?.singleSelectReply?.selectedRowId || m.text
+    : m.mtype === 'stickerMessage' && getCmd(m.message.stickerMessage.fileSha256.toString('base64')) != null
+    ? getCmd(m.message.stickerMessage.fileSha256.toString('base64'))
+    : '';
+
+// ✅ PAKSA jadi string biar aman
+body = typeof body === 'string' ? body : String(body || '');
+
+// === Parsing Command ===
+const prefixRegex = /^[°zZ#$@*+,.?=''():√%!¢£¥€π¤ΠΦ_&><™©®Δ^βα~¦|/\\©^]/;
+const prefix = prefixRegex.test(body) ? body.match(prefixRegex)[0] : '.';
+
+const isCmd = body.startsWith(prefix);
+const command = body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase();
+const args = body.trim().split(/ +/).slice(1);
+const text = args.join(" ");
         const budy = (typeof m.text === 'string') ? m.text : '';
-    const prefixRegex = /^[°zZ#$@*+,.?=''():√%!¢£¥€π¤ΠΦ_&><™©®Δ^βα~¦|/\\©^]/;
-    const prefix = prefixRegex.test(body) ? body.match(prefixRegex)[0] : '.';
-    const isCmd = body.startsWith(prefix);
-    const command = body.replace(prefix, '').trim().split(/ +/).shift().toLowerCase()
-    const args = body.trim().split(/ +/).slice(1)
-    const text = q = args.join(" ")
     const isGroup = m && m.isGroup ? m.isGroup : false;
     const sender = m.key.fromMe ? (Kaoru.user.id.split(':')[0] + '@s.whatsapp.net' || Kaoru.user.id) : (m.key.participant || m.key.remoteJid)
     const botNumber = await Kaoru.decodeJid(Kaoru.user.id)
@@ -89,6 +119,11 @@ module.exports = Kaoru = async (Kaoru, m, msg, chatUpdate, store) => {
     const isBotAdmins = m.isGroup ? groupAdmins.includes(botNumber) : false
     const isAdmins = m.isGroup ? groupAdmins.includes(m.sender) : false
     const qmsg = (quoted.msg || quoted)
+  const { logMessage } = require('./utils/logger');
+
+const chatId = m.chat;
+const chatType = m.isGroup ? 'group' : 'private';
+  
   
       async function waitForResponse(sender) {
       return new Promise((resolve, reject) => {
@@ -354,15 +389,17 @@ Kaoru.sendImageAsStickers = async (jid, path, quoted, options = {}) => {
     }
     
     //log pesan
-   if(m.message) {
-      console.log(chalk.black.bgCyan(' [ NOTIF ] '), // Teks singkat dengan simbol kilat
-        chalk.black.bgYellow(` ⏰ ${new Date().toLocaleTimeString()} `), // Simbol jam dan waktu
-        chalk.white.bgMagenta(` 💬 ${budy || m.mtype} `), // Simbol pesan
-        '\n' + chalk.green('👤 Dari: '), chalk.blue(pushname), // Nama pengirim dengan simbol orang
-        chalk.redBright(`📧 ${m.sender}`), // ID pengirim dengan simbol email
-        '\n' + chalk.green('📍 Chat: '), chalk.yellow(m.isGroup ? '👥 Grup' : '🔒 Privat') // Grup dengan simbol grup, privat dengan simbol gembok
-      );
-    }
+   if (m.message) {
+const text = budy || m.mtype
+  logMessage({
+  platform: 'WA',
+  time: new Date(),
+  chatType,
+  chatId,
+  user: { pushName: pushname, id: m.sender },
+  text
+});
+}
     
     //apalh
     if(m.isGroup && isAlreadyResponList(m.chat, body.toLowerCase(), db_respon_list)) {
@@ -445,6 +482,30 @@ switch(command) {
     }
 }
     break
+    case 'buatnama': {
+  try {
+    const cowok = [generateName('male'), generateName('male'), generateName('male')];
+    const cewek = [generateName('female'), generateName('female'), generateName('female')];
+
+    const teks = `
+👦 *Nama Laki-laki*:
+1. ${cowok[0]}
+2. ${cowok[1]}
+3. ${cowok[2]}
+
+👧 *Nama Perempuan*:
+1. ${cewek[0]}
+2. ${cewek[1]}
+3. ${cewek[2]}
+`.trim();
+
+    reply(teks);
+  } catch (err) {
+    console.error(err);
+    reply("⚠️ Gagal menghasilkan nama! Mungkin file JSON-nya ada yang error.");
+  }
+}
+break
     case 'runtime':{
     reply(`${runtime(os.uptime())}`)
     }

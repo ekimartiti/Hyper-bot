@@ -1,4 +1,4 @@
-require('./config');
+const config = require('./config.json');
 const { default: makeWASocket, makeCacheableSignalKeyStore, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, getContentType, generateForwardMessageContent, prepareWAMessageMedia, generateWAMessageFromContent, generateMessageID, downloadContentFromMessage, jidDecode, getAggregateVotesInPollMessage, proto, delay } = require("@whiskeysockets/baileys");
 const { uncache, nocache } = require('./lib/loader');
 const { color } = require('./lib/color');
@@ -22,7 +22,6 @@ const { imageToWebp, videoToWebp, writeExifImg, writeExifVid } = require('./lib/
 const { isUrl, generateMessageTag, getBuffer, getSizeMedia, await, sleep, reSize } = require('./lib/myfunc');
 const SESSION_FOLDER = path.join(__dirname, 'session');
 const mongoStatus = process.env.MONGO_STATUS === 'true';
-
 
 global.autoswview = false;
 global.welcome = true;
@@ -57,7 +56,7 @@ require('./main.js');
 nocache('../main.js', module => console.log(color('[ CHANGE ]', 'green'), color(`'${module}'`, 'green'), 'Updated'));
 
 const usePairingCode = true;
-const session = `./${sessionName}`;
+const session = `session`;
 
 const question = (text) => {
 	const rl = readline.createInterface({
@@ -87,7 +86,7 @@ function kBanner() {
 ┃╭╋━╮╭━┳┳┳┳╮
 ┃╰┫╋╰┫╋┃╭┫┃┃
 ╰┻┻━━┻━┻╯╰━╯
-Kaoru Whatsapp Bot -_-
+Kaoru Hyper Bot -_-
 =======================
 `;
     console.clear();
@@ -198,8 +197,9 @@ if (fs.existsSync(SESSION_FOLDER)) {
   : logJingga(`MongoDB Off${chalk.red("•")}`);
 		  
 			logJingga(`Bot On${chalk.green("•")}`)
-			logJingga(`Number: ${chalk.green(JSON.stringify(Kaoru.user.id, null, 2))}`)
-      logJingga(`Name: ${chalk.green(JSON.stringify(Kaoru.user.name, null, 2))}`)
+			logJingga(`Whatsapp Bot Number: ${chalk.green(JSON.stringify(Kaoru.user.id, null, 2))}`)
+      logJingga(`Whatsapp Bot Name: ${chalk.green(JSON.stringify(Kaoru.user.name, null, 2))}`)
+logJingga(`Telegram Bot Name: ${chalk.green(JSON.stringify(config.botUsername, null, 2))}`)
 		}
 	});
 
