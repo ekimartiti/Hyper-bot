@@ -44,22 +44,37 @@ app.get('/login', (req, res) => {
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
-    const user = await User.findOne({ username });
-
-    if (!user) {
-        return res.render('login', { error: 'Username salah' });
+    // Validasi awal
+    if (!username || !password) {
+        console.log(`Login gagal: input kosong dari IP ${req.ip}`);
+        return res.render('login', { error: 'Username dan password wajib diisi' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-        return res.render('login', { error: 'Password salah' });
-    }
+    try {
+        const user = await User.findOne({ username });
 
-    req.session.isAuthenticated = true;
-    req.session.username = user.username;
-    res.redirect('/');
+        if (!user || !user.password || typeof user.password !== 'string') {
+            console.log(`Login gagal: user tidak ditemukan atau password corrupt dari IP ${req.ip}`);
+            return res.render('login', { error: 'Username atau password salah' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            console.log(`Login gagal: password salah untuk ${username} dari IP ${req.ip}`);
+            return res.render('login', { error: 'Password salah' });
+        }
+
+        // Sukses login
+        console.log(`Login berhasil: ${username} dari IP ${req.ip}`);
+        req.session.isAuthenticated = true;
+        req.session.username = user.username;
+        res.redirect('/');
+    } catch (err) {
+        console.error("Login error:", err);
+        res.render('login', { error: 'Terjadi kesalahan saat login' });
+    }
 });
-
 // Route for logout
 app.get('/logout', (req, res) => {
     req.session.destroy(err => {
