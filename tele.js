@@ -14,7 +14,7 @@ function escapeMarkdown(text = '') {
 let isAutoPromoOn = false;
 const User = require('./models/teleuser');
 const Group = require('./models/group');
-
+const keycek = "8bdba486f2087137c22abd5f3988140d54da9e08db2b6812d6b5677a025c30c1"
 // === Cek dan Muat config.json ===
 let config = {};
 try {
@@ -860,7 +860,16 @@ reservedStockPerUser.set(userId, { produk, jumlah });
       const totalAmount = baseAmount + fee;
 
       // Cek apakah amount ini sudah ada di mutasi
-      const res = await axios.get(`https://gateway.okeconnect.com/api/mutasi/qris/${merchant}/${keyorkut}`);
+      const res = await axios.post(
+  'https://api.wahdx.co/api/mutasi-orkut',
+  { merchantId: merchant },
+  {
+    headers: {
+      'tokenKey': keycek,
+      'Content-Type': 'application/json'
+    }
+  }
+);
       const isDuplicate = res.data?.data?.some(tx => tx.amount === totalAmount && tx.type === "CR");
 
       if (!isDuplicate) {
@@ -959,7 +968,16 @@ if (!qrisData.status) return; // Stop kalau gagal
 if (!txn) return;
 
 const { produk, jumlah } = txn;
-            const res = await axios.get(`https://gateway.okeconnect.com/api/mutasi/qris/${merchant}/${keyorkut}`);
+            const res = await axios.post(
+  'https://api.wahdx.co/api/mutasi-orkut',
+  { merchantId: merchant },
+  {
+    headers: {
+      'tokenKey': keycek,
+      'Content-Type': 'application/json'
+    }
+  }
+);
             const match = res.data?.data?.find(tx =>
               tx.amount == qrisData.result.totalAmount && tx.type === "CR");
             if (match) {
