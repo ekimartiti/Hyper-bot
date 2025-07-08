@@ -417,7 +417,7 @@ bot.onText(/\/cektoken/, async (msg) => {
   const akun = new OrderKuota(username, token);
 
   try {
-    const res = await getMutasiQris();
+    const res = await akun.getTransactionQris();
 
     if (res?.account?.results?.username) {
       const userInfo = res.account.results;
