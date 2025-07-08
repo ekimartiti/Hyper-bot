@@ -14,7 +14,7 @@ function escapeMarkdown(text = '') {
 let isAutoPromoOn = false;
 const User = require('./models/teleuser');
 const Group = require('./models/group');
-const keycek = "8bdba486f2087137c22abd5f3988140d54da9e08db2b6812d6b5677a025c30c1"
+const getMutasiQris = require('./kaoruFunction/mutasi');
 // === Cek dan Muat config.json ===
 let config = {};
 try {
@@ -405,6 +405,36 @@ bot.onText(/\/autopromooff/, (msg) => {
   }
 });
 
+//cek token
+bot.onText(/\/cektoken/, async (msg) => {
+  const senderId = msg.chat.id;
+  if (senderId !== ADMIN_CHAT_ID) {
+    return bot.sendMessage(senderId, '❌ Kamu tidak punya akses.');
+  }
+
+  const { username, token } = config.orkut;
+  const OrderKuota = require('./kaoruFunction/orderKuota');
+  const akun = new OrderKuota(username, token);
+
+  try {
+    const res = await akun.getTransactionQris();
+
+    if (res?.account?.results?.username) {
+      const userInfo = res.account.results;
+      await bot.sendMessage(senderId, 
+        `✅ *Token Valid!*\n` +
+        `👤 Username: \`${userInfo.username}\`\n` +
+        `💰 Saldo QRIS: *${userInfo.qris_balance_str}*\n` +
+        `📛 Name: *${userInfo.name}*`, 
+        { parse_mode: 'Markdown' }
+      );
+    } else {
+      await bot.sendMessage(senderId, '⚠️ Token tidak valid atau sudah expired.');
+    }
+  } catch (err) {
+    await bot.sendMessage(senderId, `❌ Gagal cek token!\nError: ${err.message}`);
+  }
+});
 // === Perintah Admin: /getemailfresh <jumlah> ===
 // ========================================
 // Fungsi Ambil Email General
@@ -860,16 +890,7 @@ reservedStockPerUser.set(userId, { produk, jumlah });
       const totalAmount = baseAmount + fee;
 
       // Cek apakah amount ini sudah ada di mutasi
-      const res = await axios.post(
-  'https://api.wahdx.co/api/mutasi-orkut',
-  { merchantId: merchant },
-  {
-    headers: {
-      'tokenKey': keycek,
-      'Content-Type': 'application/json'
-    }
-  }
-);
+      const res = await akun.getTransactionQris();
       const isDuplicate = res.data?.data?.some(tx => tx.amount === totalAmount && tx.type === "CR");
 
       if (!isDuplicate) {
@@ -968,16 +989,7 @@ if (!qrisData.status) return; // Stop kalau gagal
 if (!txn) return;
 
 const { produk, jumlah } = txn;
-            const res = await axios.post(
-  'https://api.wahdx.co/api/mutasi-orkut',
-  { merchantId: merchant },
-  {
-    headers: {
-      'tokenKey': keycek,
-      'Content-Type': 'application/json'
-    }
-  }
-);
+            const res = await akun.getTransactionQris();
             const match = res.data?.data?.find(tx =>
               tx.amount == qrisData.result.totalAmount && tx.type === "CR");
             if (match) {
