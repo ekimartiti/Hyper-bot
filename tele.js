@@ -417,7 +417,7 @@ bot.onText(/\/cektoken/, async (msg) => {
   const akun = new OrderKuota(username, token);
 
   try {
-    const res = await akun.getTransactionQris();
+    const res = await getMutasiQris();
 
     if (res?.account?.results?.username) {
       const userInfo = res.account.results;
@@ -890,7 +890,7 @@ reservedStockPerUser.set(userId, { produk, jumlah });
       const totalAmount = baseAmount + fee;
 
       // Cek apakah amount ini sudah ada di mutasi
-      const res = await akun.getTransactionQris();
+      const res = await getMutasiQris();
       const isDuplicate = res.data?.data?.some(tx => tx.amount === totalAmount && tx.type === "CR");
 
       if (!isDuplicate) {
@@ -989,7 +989,7 @@ if (!qrisData.status) return; // Stop kalau gagal
 if (!txn) return;
 
 const { produk, jumlah } = txn;
-            const res = await akun.getTransactionQris();
+            const res = await getMutasiQris();
             const match = res.data?.data?.find(tx =>
               tx.amount == qrisData.result.totalAmount && tx.type === "CR");
             if (match) {
