@@ -14,6 +14,7 @@ const token = config.orkut.token
 async function getMutasiQris() {
   try {
     const akun = new OrderKuota(username, token);
+    await akun.triggerQrisMenu(); // WAJIB
     const formatted = await akun.getFormattedMutasiQris();
 
     return {

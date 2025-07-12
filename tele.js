@@ -435,6 +435,43 @@ bot.onText(/\/cektoken/, async (msg) => {
     await bot.sendMessage(senderId, `❌ Gagal cek token!\nError: ${err.message}`);
   }
 });
+const escapeMarkdown = (text) => {
+  return text
+    .toString()
+    .replace(/[_*[\]()~`>#+=|{}.!-]/g, "\\$&");
+};
+
+bot.onText(/\/mutasi/, async (msg) => {
+  const senderId = msg.chat.id;
+  if (senderId !== ADMIN_CHAT_ID) {
+    return bot.sendMessage(senderId, '❌ Kamu tidak punya akses.');
+  }
+  try {
+    const res = await getMutasiQris();
+    const mutasi = res?.data?.data || [];
+
+    if (!mutasi.length) {
+      return bot.sendMessage(senderId, '📭 Tidak ada mutasi terbaru saat ini.');
+    }
+
+    let pesan = `📄 *5 Mutasi Terbaru* (akun \`${escapeMarkdown(res.data.merchant)}\`):\n\n`;
+
+    mutasi.slice(0, 5).forEach((trx, i) => {
+      pesan += `*#${i + 1}* - ${escapeMarkdown(trx.date)}\n`;
+      pesan += `💳 Brand  : ${escapeMarkdown(trx.brand_name)}\n`;
+      pesan += `👤 Buyer  : ${escapeMarkdown(trx.buyer_reff)}\n`;
+      pesan += `📦 Nominal: Rp ${(+trx.amount).toLocaleString('id-ID')}\n`;
+      pesan += `🏦 Saldo  : Rp ${(+trx.balance).toLocaleString('id-ID')}\n\n`;
+    });
+
+    await bot.sendMessage(senderId, pesan, { parse_mode: 'Markdown' });
+
+  } catch (err) {
+    console.error('❌ Gagal ambil mutasi:', err);
+    await bot.sendMessage(senderId, `❌ Gagal mengambil mutasi!\nError: ${err.message}`);
+  }
+});
+
 // === Perintah Admin: /getemailfresh <jumlah> ===
 // ========================================
 // Fungsi Ambil Email General

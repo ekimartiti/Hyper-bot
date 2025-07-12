@@ -39,24 +39,54 @@ class OrderKuota {
     return this.request("POST", `${OrderKuota.API_URL}/login`, payload, true);
   }
 
-  async getTransactionQris(type = '') {
-    const payload = qs.stringify({
-      auth_token: this.authToken,
-      auth_username: this.username,
-      'requests[qris_history][jumlah]': '',
-      'requests[qris_history][jenis]': type,
-      'requests[qris_history][page]': 1,
-      'requests[qris_history][dari_tanggal]': '',
-      'requests[qris_history][ke_tanggal]': '',
-      'requests[qris_history][keterangan]': '',
-      'requests[0]': 'account',
-      app_version_name: OrderKuota.APP_VERSION_NAME,
-      app_version_code: OrderKuota.APP_VERSION_CODE,
-      app_reg_id: OrderKuota.APP_REG_ID,
-    });
+async getTransactionQris() {
+  const today = new Date().toLocaleDateString('fr-CA'); // yyyy-mm-dd
 
-    return this.request("POST", `${OrderKuota.API_URL}/get`, payload, true);
-  }
+  const payload = qs.stringify({
+    app_reg_id: 'd4_CNnueTnaoQYcz8FYnPJ:APA91bGKJQ3XTBv0vTGSUIVw_-vBo-ZmpBiB-jOnirgn7s1JklUtvPhs1xyeXAKrbI2HUVQT_U5nQytO-Fgx2PgKudaDNcN297GSqDFFM1nJmTHclPnOozQ',
+    phone_uuid: 'd4_CNnueTnaoQYcz8FYnPJ',
+    phone_model: 'RMX1911',
+    phone_android_version: '10',
+    ui_mode: 'dark',
+    app_version_code: '250327',
+    app_version_name: '25.03.27',
+    auth_username: this.username,
+    auth_token: this.authToken,
+
+    'requests[qris_history][jenis]': 'kredit',
+    'requests[qris_history][jumlah]': '',
+    'requests[qris_history][keterangan]': '',
+    'requests[qris_history][page]': 1,
+    'requests[qris_history][dari_tanggal]': today,
+    'requests[qris_history][ke_tanggal]': today,
+    'requests[0]': 'account',
+  });
+
+  return this.request("POST", `${OrderKuota.API_URL}/get`, payload, true);
+}
+
+async getFormattedMutasiQris() {
+  const raw = await this.getTransactionQris();
+  const history = raw?.qris_history?.results || [];
+
+  return history.map((trx) => {
+    // Konversi tanggal ke format 'YYYY-MM-DD HH:mm:00'
+    const date = trx.tanggal
+      .replace(/\//g, '-')
+      .replace(/(\d{2})-(\d{2})-(\d{4})/, '$3-$2-$1') + ':00';
+
+    return {
+      date,
+      amount: trx.kredit?.replace(/\./g, '') || '0',
+      type: 'CR',
+      qris: 'static',
+      brand_name: trx.brand?.name || 'UNKNOWN',
+      issuer_reff: trx.issuer_reff || trx.brand?.ref || '',
+      buyer_reff: trx.keterangan?.trim() || '',
+      balance: trx.saldo_akhir?.replace(/\./g, '') || '0'
+    };
+  });
+}
 
   async withdrawalQris(amount = '') {
     const payload = qs.stringify({
@@ -122,6 +152,46 @@ class OrderKuota {
     };
   });
 }
+async getTransactionQrisSniffed() {
+  const payload = qs.stringify({
+    app_reg_id: 'd4_CNnueTnaoQYcz8FYnPJ:APA91bGKJQ3XTBv0vTGSUIVw_-vBo-ZmpBiB-jOnirgn7s1JklUtvPhs1xyeXAKrbI2HUVQT_U5nQytO-Fgx2PgKudaDNcN297GSqDFFM1nJmTHclPnOozQ',
+    phone_uuid: 'd4_CNnueTnaoQYcz8FYnPJ',
+    phone_model: 'RMX1911',
+    phone_android_version: '10',
+    ui_mode: 'dark',
+    app_version_code: '250327',
+    app_version_name: '25.03.27',
+    auth_username: 'dimasgempik',
+    auth_token: '2457295:364nWOStAmeQZ5GDd0HhLwjBaI7VpyPx',
+    'requests[qris_history][jenis]': 'kredit',
+    'requests[qris_history][keterangan]': '',
+    'requests[qris_history][jumlah]': '',
+    'requests[qris_history][page]': 1,
+    'requests[qris_history][dari_tanggal]': '',
+    'requests[qris_history][ke_tanggal]': '',
+    'requests[0]': 'account',
+  });
+
+  return this.request('POST', `${OrderKuota.API_URL}/get`, payload, true);
+}
+async triggerQrisMenu() {
+  const payload = qs.stringify({
+    app_reg_id: OrderKuota.APP_REG_ID,
+    phone_android_version: '10',
+    phone_uuid: 'd4_CNnueTnaoQYcz8FYnPJ',
+    auth_username: this.username,
+    auth_token: this.authToken,
+    app_version_code: '250711',
+    app_version_name: '25.07.11',
+    ui_mode: 'dark',
+    phone_model: 'RMX1911',
+    'requests[0]': 'account',
+    'requests[1]': 'qris_menu'
+  });
+
+  return this.request("POST", `${OrderKuota.API_URL}/get`, payload, true);
+}
+
 }
 
 

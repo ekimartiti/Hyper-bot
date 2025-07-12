@@ -322,5 +322,6 @@
     "url": "https://github.com/ekimartiti/Hyper-bot/issues"
   },
   "homepage": "https://github.com/ekimartiti/Hyper-bot#readme",
+  "devDependencies": {},
   "description": ""
 }
